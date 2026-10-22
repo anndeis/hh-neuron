@@ -104,9 +104,9 @@ let h = alphaH(V) / (alphaH(V) + betaH(V));
 let n = alphaN(V) / (alphaN(V) + betaN(V));
 
 // ===== Время и график =====
-const dt = 0.01;            // шаг интегрирования, мс (меньше = плавнее)
+const dt = 0.001;            // шаг интегрирования, мс (меньше = плавнее)
 const tMax = 200;             // окно графика, мс модельного времени
-const TIME_SCALE = 1;       // 1 сек реального = 10 мс модельного (было 50)
+const TIME_SCALE = 0.1;       // 1 сек реального = 10 мс модельного (было 50)
 const history = [];
 let simTime = 0;
 let lastRealTime = performance.now();
