@@ -1,443 +1,73 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="UTF-8">
-<title>Симулятор нейрона Ходжкина-Хаксли</title>
-<style>
-  body {
-    font-family: system-ui, sans-serif;
-    background: #0f1420;
-    color: #e6e6e6;
-    margin: 0;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+// ===== Генератор извилистых дендритов =====
+(function buildDendrites() {
+  const g = document.getElementById('dendrites');
+  if (!g) return;
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const somaX = 120, somaY = 80;   // центр тела
+  const somaR = 34;                // радиус тела по X
+
+  // Псевдослучайный генератор с фиксированным seed — чтобы рисунок
+  // был одинаковым при каждой загрузке страницы
+  let seed = 42;
+  function rand() {
+    seed = (seed * 1664525 + 1013904223) % 4294967296;
+    return seed / 4294967296;
   }
-  h1 { font-size: 20px; font-weight: 500; margin-bottom: 16px; }
-  canvas {
-    background: #0a0e17;
-    border: 1px solid #2a3550;
-    border-radius: 8px;
-    display: block;
-  }
-  #plotV { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: none; }
-  #plotI { border-top-left-radius: 0; border-top-right-radius: 0; }
+  function randRange(a, b) { return a + (b - a) * rand(); }
 
-  /* ===== Нейрон сверху ===== */
-  .neuron-wrap {
-    margin-bottom: 16px;
-    padding: 16px 24px;
-    background: #0a0e17;
-    border: 1px solid #2a3550;
-    border-radius: 12px;
-    transition: box-shadow 0.15s;
-  }
-  .neuron-wrap.firing {
-    box-shadow: 0 0 24px rgba(127, 212, 255, 0.35);
-    border-color: #7fd4ff;
-  }
+  // Рекурсивно рисует ветку от точки (x, y) в направлении angle
+  function branch(x, y, angle, length, width, depth) {
+    if (depth <= 0 || length < 4) return;
 
-  .neuron-svg .neuron-body,
-  .neuron-svg .neuron-axon,
-  .neuron-svg .neuron-dendrite {
-    transition: fill 0.15s, stroke 0.15s, filter 0.15s;
-  }
-  .neuron-svg .neuron-body {
-    fill: #2a3550;
-    stroke: #4a5a80;
-    stroke-width: 2;
-  }
-  .neuron-svg .neuron-axon {
-    stroke: #4a5a80;
-    stroke-width: 3;
-    fill: none;
-    stroke-linecap: round;
-  }
-  .neuron-svg .neuron-dendrite {
-    stroke: #4a5a80;
-    stroke-width: 2.5;
-    fill: none;
-    stroke-linecap: round;
-  }
-  .neuron-svg .nucleus {
-    fill: #3a4a70;
-    transition: fill 0.15s;
-  }
+    // Конечная точка с небольшим искривлением
+    const bend = randRange(-0.5, 0.5);          // изгиб
+    const endAngle = angle + bend;
+    const ex = x + Math.cos(endAngle) * length;
+    const ey = y + Math.sin(endAngle) * length;
 
-  .neuron-wrap.firing .neuron-body {
-    fill: #7fd4ff;
-    stroke: #b8e8ff;
-    filter: drop-shadow(0 0 8px #7fd4ff);
-  }
-  .neuron-wrap.firing .neuron-axon {
-    stroke: #7fd4ff;
-    filter: drop-shadow(0 0 6px #7fd4ff);
-  }
-  .neuron-wrap.firing .neuron-dendrite {
-    stroke: #5aa8d8;
-  }
-  .neuron-wrap.firing .nucleus {
-    fill: #ffffff;
-  }
+    // Контрольные точки для кубической Безье — дают извилистость
+    const c1x = x + Math.cos(angle + randRange(-0.4, 0.4)) * length * 0.4;
+    const c1y = y + Math.sin(angle + randRange(-0.4, 0.4)) * length * 0.4;
+    const c2x = x + Math.cos(endAngle + randRange(-0.4, 0.4)) * length * 0.6;
+    const c2y = y + Math.sin(endAngle + randRange(-0.4, 0.4)) * length * 0.6;
 
-  .controls {
-    margin-top: 16px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .slider-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  input[type=range] { width: 220px; }
-  #currentBtn {
-    padding: 10px 28px;
-    font-size: 16px;
-    font-weight: 600;
-    border: none;
-    border-radius: 8px;
-    background: #3a4a70;
-    color: #fff;
-    cursor: pointer;
-    user-select: none;
-    transition: background 0.15s;
-  }
-  #currentBtn.active { background: #d94848; }
-  #currentBtn:active { transform: translateY(1px); }
-  .value {
-    font-variant-numeric: tabular-nums;
-    min-width: 60px;
-    text-align: right;
-    color: #7fd4ff;
-  }
-  .readout {
-    margin-top: 10px;
-    font-size: 14px;
-    color: #9fb3d9;
-    font-variant-numeric: tabular-nums;
-  }
-  .readout b { color: #7fd4ff; font-weight: 600; }
-</style>
-</head>
-<body>
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('class', 'neuron-dendrite');
+    path.setAttribute('d',
+      `M ${x.toFixed(1)} ${y.toFixed(1)} ` +
+      `C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ` +
+        `${c2x.toFixed(1)} ${c2y.toFixed(1)}, ` +
+        `${ex.toFixed(1)} ${ey.toFixed(1)}`
+    );
+    path.setAttribute('stroke-width', width.toFixed(2));
+    g.appendChild(path);
 
-<h1>Мембранный потенциал и ток (модель Ходжкина-Хаксли)</h1>
-
-<!-- ===== Нейрон (теперь сверху) ===== -->
-<div class="neuron-wrap" id="neuronWrap">
-  <svg class="neuron-svg" width="260" height="120" viewBox="0 0 260 120">
-    <path class="neuron-dendrite" d="M 60 60 L 25 30 M 60 60 L 15 60 M 60 60 L 25 90 M 35 45 L 10 20 M 35 75 L 10 100" />
-    <ellipse class="neuron-body" cx="90" cy="60" rx="32" ry="28" />
-    <circle class="nucleus" cx="90" cy="60" r="9" />
-    <path class="neuron-axon" d="M 122 60 L 200 60" />
-    <path class="neuron-axon" d="M 200 60 L 230 40 M 200 60 L 240 60 M 200 60 L 230 80" />
-    <circle class="neuron-body" cx="230" cy="40" r="4" />
-    <circle class="neuron-body" cx="240" cy="60" r="4" />
-    <circle class="neuron-body" cx="230" cy="80" r="4" />
-  </svg>
-</div>
-
-<canvas id="plotV" width="800" height="340"></canvas>
-<canvas id="plotI" width="800" height="120"></canvas>
-
-<div class="readout">V = <b id="vNow">-65.0</b> мВ &nbsp;|&nbsp; I = <b id="iNow">0.0</b> мкА/см² &nbsp;|&nbsp; t = <b id="tNow">0.0</b> мс</div>
-
-<div class="controls">
-  <div class="slider-group">
-    <label for="amp">Амплитуда тока:</label>
-    <input type="range" id="amp" min="0" max="15" step="0.1" value="10">
-    <span class="value" id="ampVal">10.0 мкА/см²</span>
-  </div>
-  <button id="currentBtn">ТОК</button>
-</div>
-
-<script>
-// ===== Параметры модели Ходжкина-Хаксли =====
-const Cm = 1.0;
-const gNa = 120.0;
-const gK  = 36.0;
-const gL  = 0.3;
-const ENa = 50.0;
-const EK  = -77.0;
-const EL  = -54.4;
-
-function alphaM(V) { return 0.1 * (V + 40) / (1 - Math.exp(-(V + 40) / 10)); }
-function betaM(V)  { return 4.0 * Math.exp(-(V + 65) / 18); }
-function alphaH(V) { return 0.07 * Math.exp(-(V + 65) / 20); }
-function betaH(V)  { return 1.0 / (1 + Math.exp(-(V + 35) / 10)); }
-function alphaN(V) { return 0.01 * (V + 55) / (1 - Math.exp(-(V + 55) / 10)); }
-function betaN(V)  { return 0.125 * Math.exp(-(V + 65) / 80); }
-
-// Состояние модели
-let V = -65.0;
-let m = alphaM(V) / (alphaM(V) + betaM(V));
-let h = alphaH(V) / (alphaH(V) + betaH(V));
-let n = alphaN(V) / (alphaN(V) + betaN(V));
-
-// ===== Время и график =====
-const dt = 0.001;
-const tMax = 100;
-const TIME_SCALE = 6;
-const history = [];
-let simTime = 0;
-
-// ===== Порог для вспышки =====
-const THRESHOLD = -55;
-const FLASH_MS = 150;
-let flashUntil = 0;
-
-// ===== Управление =====
-const ampSlider = document.getElementById('amp');
-const ampVal    = document.getElementById('ampVal');
-const currentBtn = document.getElementById('currentBtn');
-const vNowEl = document.getElementById('vNow');
-const iNowEl = document.getElementById('iNow');
-const tNowEl = document.getElementById('tNow');
-const neuronWrap = document.getElementById('neuronWrap');
-let isCurrentOn = false;
-
-ampSlider.addEventListener('input', () => {
-  ampVal.textContent = parseFloat(ampSlider.value).toFixed(1) + ' мкА/см²';
-});
-
-currentBtn.addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  isCurrentOn = true;
-  currentBtn.classList.add('active');
-});
-window.addEventListener('pointerup', () => {
-  isCurrentOn = false;
-  currentBtn.classList.remove('active');
-});
-window.addEventListener('pointercancel', () => {
-  isCurrentOn = false;
-  currentBtn.classList.remove('active');
-});
-
-// ===== Один шаг модели =====
-function step() {
-  const Iext = isCurrentOn ? parseFloat(ampSlider.value) : 0;
-
-  const INa = gNa * m * m * m * h * (V - ENa);
-  const IK  = gK  * n * n * n * n * (V - EK);
-  const IL  = gL  * (V - EL);
-
-  const dV = (Iext - INa - IK - IL) / Cm;
-  const dm = alphaM(V) * (1 - m) - betaM(V) * m;
-  const dh = alphaH(V) * (1 - h) - betaH(V) * h;
-  const dn = alphaN(V) * (1 - n) - betaN(V) * n;
-
-  const Vprev = V;
-  V += dV * dt;
-  m += dm * dt;
-  h += dh * dt;
-  n += dn * dt;
-
-  if (Vprev < THRESHOLD && V >= THRESHOLD) {
-    flashUntil = performance.now() + FLASH_MS;
-  }
-
-  return Iext;
-}
-
-// ===== Отрисовка =====
-const canvasV = document.getElementById('plotV');
-const canvasI = document.getElementById('plotI');
-const ctxV = canvasV.getContext('2d');
-const ctxI = canvasI.getContext('2d');
-
-const WV = canvasV.width, HV = canvasV.height;
-const WI = canvasI.width, HI = canvasI.height;
-const padL = 50, padR = 15, padT = 15, padB = 30;
-const Vmin = -90, Vmax = 50;
-const Imax = 15;
-
-function xToPx(t, W) { return padL + (t / tMax) * (W - padL - padR); }
-function vToPy(v, H) { return padT + (1 - (v - Vmin) / (Vmax - Vmin)) * (H - padT - padB); }
-function iToPy(i, H) { return padT + (1 - i / Imax) * (H - padT - padB); }
-
-function niceStep(range, target) {
-  const raw = range / target;
-  const steps = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000];
-  return steps.find(s => s >= raw) || steps[steps.length - 1];
-}
-
-function draw() {
-  // ===== Верхний график: V(t) =====
-  ctxV.clearRect(0, 0, WV, HV);
-
-  ctxV.font = '12px system-ui';
-  ctxV.textAlign = 'right';
-  const stepV = niceStep(Vmax - Vmin, 7);
-  for (let v = Vmin; v <= Vmax + 1e-9; v += stepV) {
-    const y = vToPy(v, HV);
-    ctxV.strokeStyle = '#1a2136';
-    ctxV.beginPath();
-    ctxV.moveTo(padL, y);
-    ctxV.lineTo(WV - padR, y);
-    ctxV.stroke();
-    ctxV.fillStyle = '#7a89a8';
-    ctxV.fillText(v, padL - 8, y + 4);
-  }
-
-  if (THRESHOLD > Vmin && THRESHOLD < Vmax) {
-    const yTh = vToPy(THRESHOLD, HV);
-    ctxV.strokeStyle = 'rgba(255, 183, 77, 0.45)';
-    ctxV.setLineDash([5, 5]);
-    ctxV.beginPath();
-    ctxV.moveTo(padL, yTh);
-    ctxV.lineTo(WV - padR, yTh);
-    ctxV.stroke();
-    ctxV.setLineDash([]);
-  }
-
-  ctxV.strokeStyle = '#2a3550';
-  ctxV.beginPath();
-  ctxV.moveTo(padL, padT);
-  ctxV.lineTo(padL, HV - padB);
-  ctxV.lineTo(WV - padR, HV - padB);
-  ctxV.stroke();
-
-  ctxV.textAlign = 'center';
-  ctxV.fillStyle = '#7a89a8';
-  const stepT = niceStep(tMax, 7);
-  for (let t = 0; t <= tMax + 1e-9; t += stepT) {
-    const x = xToPx(t, WV);
-    ctxV.strokeStyle = '#1a2136';
-    ctxV.beginPath();
-    ctxV.moveTo(x, padT);
-    ctxV.lineTo(x, HV - padB);
-    ctxV.stroke();
-  }
-
-  ctxV.textAlign = 'left';
-  ctxV.fillStyle = '#7a89a8';
-  ctxV.fillText('V (мВ)', padL - 40, padT - 2);
-
-  if (history.length > 1) {
-    ctxV.strokeStyle = '#7fd4ff';
-    ctxV.lineWidth = 2;
-    ctxV.lineJoin = 'round';
-    ctxV.beginPath();
-    const t0 = simTime - tMax;
-    let started = false;
-    for (let i = 0; i < history.length; i++) {
-      const p = history[i];
-      if (p.t < t0) continue;
-      const x = xToPx(p.t - t0, WV);
-      const y = vToPy(p.V, HV);
-      if (!started) { ctxV.moveTo(x, y); started = true; }
-      else ctxV.lineTo(x, y);
+    // Ветвление: 2 потомка с разными углами
+    const nChildren = depth > 2 ? 2 : (rand() < 0.6 ? 2 : 1);
+    for (let i = 0; i < nChildren; i++) {
+      const spread = randRange(0.35, 0.75) * (i === 0 ? -1 : 1);
+      branch(
+        ex, ey,
+        endAngle + spread,
+        length * randRange(0.6, 0.8),
+        width * 0.7,
+        depth - 1
+      );
     }
-    ctxV.stroke();
   }
 
-  // ===== Нижний график: I(t) =====
-  ctxI.clearRect(0, 0, WI, HI);
+  // Три «ствола» дендритов, выходящих из тела в разные стороны
+  const trunks = [
+    { angle: Math.PI * 0.95, length: 26, width: 2.4, depth: 4 }, // влево-вверх
+    { angle: Math.PI * 1.05, length: 30, width: 2.6, depth: 5 }, // влево
+    { angle: Math.PI * 1.15, length: 24, width: 2.2, depth: 4 }  // влево-вниз
+  ];
 
-  ctxI.font = '12px system-ui';
-  ctxI.textAlign = 'right';
-  const stepI = niceStep(Imax, 4);
-  for (let i = 0; i <= Imax + 1e-9; i += stepI) {
-    const y = iToPy(i, HI);
-    ctxI.strokeStyle = '#1a2136';
-    ctxI.beginPath();
-    ctxI.moveTo(padL, y);
-    ctxI.lineTo(WI - padR, y);
-    ctxI.stroke();
-    ctxI.fillStyle = '#7a89a8';
-    ctxI.fillText(i.toFixed(i < 10 ? 1 : 0), padL - 8, y + 4);
+  for (const t of trunks) {
+    // Стартовая точка — на границе эллипса тела в направлении angle
+    const sx = somaX + Math.cos(t.angle) * somaR;
+    const sy = somaY + Math.sin(t.angle) * (somaR * 0.88); // тело чуть сплюснуто
+    branch(sx, sy, t.angle, t.length, t.width, t.depth);
   }
-
-  ctxI.strokeStyle = '#2a3550';
-  ctxI.beginPath();
-  ctxI.moveTo(padL, padT);
-  ctxI.lineTo(padL, HI - padB);
-  ctxI.lineTo(WI - padR, HI - padB);
-  ctxI.stroke();
-
-  ctxI.textAlign = 'center';
-  ctxI.fillStyle = '#7a89a8';
-  for (let t = 0; t <= tMax + 1e-9; t += stepT) {
-    const x = xToPx(t, WI);
-    ctxI.strokeStyle = '#2a3550';
-    ctxI.beginPath();
-    ctxI.moveTo(x, HI - padB);
-    ctxI.lineTo(x, HI - padB + 4);
-    ctxI.stroke();
-    ctxI.fillText(t, x, HI - padB + 16);
-  }
-
-  ctxI.textAlign = 'left';
-  ctxI.fillStyle = '#7a89a8';
-  ctxI.fillText('I (мкА/см²)', padL - 42, padT - 2);
-  ctxI.textAlign = 'right';
-  ctxI.fillText('t (мс)', WI - padR, HI - 4);
-
-  if (history.length > 1) {
-    ctxI.strokeStyle = '#ffb74d';
-    ctxI.lineWidth = 2;
-    ctxI.lineJoin = 'round';
-    ctxI.beginPath();
-    const t0 = simTime - tMax;
-    let started = false;
-    for (let i = 0; i < history.length; i++) {
-      const p = history[i];
-      if (p.t < t0) continue;
-      const x = xToPx(p.t - t0, WI);
-      const y = iToPy(p.I, HI);
-      if (!started) { ctxI.moveTo(x, y); started = true; }
-      else ctxI.lineTo(x, y);
-    }
-    ctxI.stroke();
-  }
-}
-
-// ===== Главный цикл =====
-const stepsPerMsReal = TIME_SCALE / dt / 1000;
-let accumMs = 0;
-let lastRealTime = performance.now();
-
-function loop(now) {
-  const realDtMs = Math.min(now - lastRealTime, 100);
-  lastRealTime = now;
-  accumMs += realDtMs;
-
-  let steps = Math.floor(accumMs * stepsPerMsReal);
-  accumMs -= steps * (1 / stepsPerMsReal);
-  if (steps < 0) steps = 0;
-  steps = Math.min(steps, 2000);
-
-  let lastI = 0;
-  for (let i = 0; i < steps; i++) {
-    lastI = step();
-    simTime += dt;
-    history.push({ t: simTime, V: V, I: lastI });
-  }
-
-  const cutoff = simTime - tMax;
-  let drop = 0;
-  while (drop < history.length && history[drop].t < cutoff) drop++;
-  if (drop > 0) history.splice(0, drop);
-
-  if (now < flashUntil) neuronWrap.classList.add('firing');
-  else neuronWrap.classList.remove('firing');
-
-  vNowEl.textContent = V.toFixed(1);
-  iNowEl.textContent = (isCurrentOn ? parseFloat(ampSlider.value) : 0).toFixed(1);
-  tNowEl.textContent = simTime.toFixed(0);
-
-  draw();
-  requestAnimationFrame(loop);
-}
-
-requestAnimationFrame(loop);
-</script>
-
-</body>
-</html>
+})();
