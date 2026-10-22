@@ -46,9 +46,9 @@
   }
   .neuron-svg .neuron-axon {
     stroke: #a8c0e8;
-    stroke-width: 3.5;
     fill: none;
     stroke-linecap: round;
+    stroke-linejoin: round;
     transition: stroke 0.15s;
   }
   .neuron-svg .neuron-dendrite {
@@ -59,6 +59,10 @@
   }
   .neuron-svg .nucleus {
     fill: #7fd4ff;
+    transition: fill 0.15s;
+  }
+  .neuron-svg .synapse {
+    fill: #a8c0e8;
     transition: fill 0.15s;
   }
 
@@ -76,6 +80,10 @@
   }
   .neuron-wrap.firing .nucleus {
     fill: #ffffff;
+  }
+  .neuron-wrap.firing .synapse {
+    fill: #ffffff;
+    filter: drop-shadow(0 0 6px #7fd4ff);
   }
 
   .controls {
@@ -127,15 +135,11 @@
 
 <!-- ===== Нейрон ===== -->
 <div class="neuron-wrap" id="neuronWrap">
-  <svg class="neuron-svg" width="320" height="160" viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+  <svg class="neuron-svg" width="380" height="170" viewBox="0 0 380 170" xmlns="http://www.w3.org/2000/svg">
     <g id="dendrites"></g>
-    <ellipse class="neuron-body" cx="120" cy="80" rx="34" ry="30" />
-    <circle class="nucleus" cx="120" cy="80" r="10" />
-    <path class="neuron-axon" d="M 154 80 L 250 80" />
-    <path class="neuron-axon" d="M 250 80 L 285 55 M 250 80 L 295 80 M 250 80 L 285 105" />
-    <circle class="neuron-body" cx="285" cy="55" r="5" />
-    <circle class="neuron-body" cx="295" cy="80" r="5" />
-    <circle class="neuron-body" cx="285" cy="105" r="5" />
+    <ellipse class="neuron-body" cx="120" cy="85" rx="34" ry="30" />
+    <circle class="nucleus" cx="120" cy="85" r="10" />
+    <g id="axon"></g>
   </svg>
 </div>
 
@@ -222,11 +226,9 @@ window.addEventListener('pointercancel', () => {
   if (!g) return;
 
   const SVG_NS = 'http://www.w3.org/2000/svg';
-  const somaX = 120, somaY = 80;
+  const somaX = 120, somaY = 85;
   const somaR = 34;
 
-  // Фиксированный seed — рисунок одинаковый при каждой загрузке.
-  // Поменяйте на Date.now() для случайного дерева при каждом обновлении.
   let seed = 42;
   function rand() {
     seed = (seed * 1664525 + 1013904223) % 4294967296;
@@ -281,6 +283,92 @@ window.addEventListener('pointercancel', () => {
     const sx = somaX + Math.cos(t.angle) * somaR;
     const sy = somaY + Math.sin(t.angle) * (somaR * 0.88);
     branch(sx, sy, t.angle, t.length, t.width, t.depth);
+  }
+})();
+
+// ===== Генератор извилистого аксона с концевыми ветвлениями =====
+(function buildAxon() {
+  const g = document.getElementById('axon');
+  if (!g) return;
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+
+  let seed = 137;
+  function rand() {
+    seed = (seed * 1664525 + 1013904223) % 4294967296;
+    return seed / 4294967296;
+  }
+  function randRange(a, b) { return a + (b - a) * rand(); }
+
+  function wavySegment(x, y, ex, ey, width, amp) {
+    const dx = ex - x, dy = ey - y;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+
+    const off1 = randRange(-amp, amp);
+    const off2 = randRange(-amp, amp);
+
+    const c1x = x + dx * 0.33 + nx * off1;
+    const c1y = y + dy * 0.33 + ny * off1;
+    const c2x = x + dx * 0.66 + nx * off2;
+    const c2y = y + dy * 0.66 + ny * off2;
+
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('class', 'neuron-axon');
+    path.setAttribute('stroke-width', width.toFixed(2));
+    path.setAttribute('d',
+      `M ${x.toFixed(1)} ${y.toFixed(1)} ` +
+      `C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ` +
+        `${c2x.toFixed(1)} ${c2y.toFixed(1)}, ` +
+        `${ex.toFixed(1)} ${ey.toFixed(1)}`
+    );
+    g.appendChild(path);
+  }
+
+  function synapse(x, y) {
+    const c = document.createElementNS(SVG_NS, 'circle');
+    c.setAttribute('class', 'synapse');
+    c.setAttribute('cx', x.toFixed(1));
+    c.setAttribute('cy', y.toFixed(1));
+    c.setAttribute('r', '4');
+    g.appendChild(c);
+  }
+
+  // Основной ствол: два извилистых сегмента от тела до точки ветвления
+  const startX = 154, startY = 85;
+  const midX = 215, midY = 85;
+  const branchX = 265, branchY = 85;
+
+  wavySegment(startX, startY, midX, midY, 3.5, 2.5);
+  wavySegment(midX, midY, branchX, branchY, 3.0, 2.5);
+
+  // Концевые терминали веером
+  const terminals = [
+    { angle: -0.60, length: 36, width: 2.2 },
+    { angle: -0.28, length: 46, width: 2.4 },
+    { angle:  0.02, length: 52, width: 2.5 },
+    { angle:  0.32, length: 46, width: 2.4 },
+    { angle:  0.62, length: 36, width: 2.2 }
+  ];
+
+  for (const t of terminals) {
+    const a = t.angle + randRange(-0.08, 0.08);
+    const len = t.length * randRange(0.9, 1.1);
+    const ex = branchX + Math.cos(a) * len;
+    const ey = branchY + Math.sin(a) * len;
+
+    wavySegment(branchX, branchY, ex, ey, t.width, 3.5);
+    synapse(ex, ey);
+
+    // Вторичные веточки примерно у 60% терминалей
+    if (rand() < 0.6) {
+      const a2 = a + randRange(-0.5, 0.5);
+      const len2 = len * randRange(0.45, 0.65);
+      const ex2 = ex + Math.cos(a2) * len2;
+      const ey2 = ey + Math.sin(a2) * len2;
+      wavySegment(ex, ey, ex2, ey2, t.width * 0.7, 2.5);
+      synapse(ex2, ey2);
+    }
   }
 })();
 
