@@ -28,54 +28,51 @@
   .neuron-wrap {
     margin-bottom: 16px;
     padding: 16px 24px;
-    background: #0a0e17;
-    border: 1px solid #2a3550;
+    background: #16203a;
+    border: 1px solid #4a5a80;
     border-radius: 12px;
-    transition: box-shadow 0.15s;
+    transition: box-shadow 0.15s, border-color 0.15s;
   }
   .neuron-wrap.firing {
-    box-shadow: 0 0 24px rgba(127, 212, 255, 0.35);
+    box-shadow: 0 0 24px rgba(127, 212, 255, 0.55);
     border-color: #7fd4ff;
   }
 
-  .neuron-svg .neuron-body,
-  .neuron-svg .neuron-axon,
-  .neuron-svg .neuron-dendrite {
-    transition: fill 0.15s, stroke 0.15s, filter 0.15s;
-  }
   .neuron-svg .neuron-body {
-    fill: #2a3550;
-    stroke: #4a5a80;
+    fill: #5a6e9e;
+    stroke: #a8c0e8;
     stroke-width: 2;
+    transition: fill 0.15s, stroke 0.15s;
   }
   .neuron-svg .neuron-axon {
-    stroke: #4a5a80;
-    stroke-width: 3;
+    stroke: #a8c0e8;
+    stroke-width: 3.5;
     fill: none;
     stroke-linecap: round;
+    transition: stroke 0.15s;
   }
   .neuron-svg .neuron-dendrite {
-    stroke: #4a5a80;
-    stroke-width: 2.5;
+    stroke: #a8c0e8;
     fill: none;
     stroke-linecap: round;
+    transition: stroke 0.15s;
   }
   .neuron-svg .nucleus {
-    fill: #3a4a70;
+    fill: #7fd4ff;
     transition: fill 0.15s;
   }
 
   .neuron-wrap.firing .neuron-body {
     fill: #7fd4ff;
-    stroke: #b8e8ff;
-    filter: drop-shadow(0 0 8px #7fd4ff);
+    stroke: #ffffff;
+    filter: drop-shadow(0 0 10px #7fd4ff);
   }
   .neuron-wrap.firing .neuron-axon {
     stroke: #7fd4ff;
-    filter: drop-shadow(0 0 6px #7fd4ff);
+    filter: drop-shadow(0 0 8px #7fd4ff);
   }
   .neuron-wrap.firing .neuron-dendrite {
-    stroke: #5aa8d8;
+    stroke: #7fd4ff;
   }
   .neuron-wrap.firing .nucleus {
     fill: #ffffff;
@@ -128,17 +125,17 @@
 
 <h1>Мембранный потенциал и ток (модель Ходжкина-Хаксли)</h1>
 
-<!-- ===== Нейрон (теперь сверху) ===== -->
+<!-- ===== Нейрон ===== -->
 <div class="neuron-wrap" id="neuronWrap">
-  <svg class="neuron-svg" width="260" height="120" viewBox="0 0 260 120">
-    <path class="neuron-dendrite" d="M 60 60 L 25 30 M 60 60 L 15 60 M 60 60 L 25 90 M 35 45 L 10 20 M 35 75 L 10 100" />
-    <ellipse class="neuron-body" cx="90" cy="60" rx="32" ry="28" />
-    <circle class="nucleus" cx="90" cy="60" r="9" />
-    <path class="neuron-axon" d="M 122 60 L 200 60" />
-    <path class="neuron-axon" d="M 200 60 L 230 40 M 200 60 L 240 60 M 200 60 L 230 80" />
-    <circle class="neuron-body" cx="230" cy="40" r="4" />
-    <circle class="neuron-body" cx="240" cy="60" r="4" />
-    <circle class="neuron-body" cx="230" cy="80" r="4" />
+  <svg class="neuron-svg" width="320" height="160" viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <g id="dendrites"></g>
+    <ellipse class="neuron-body" cx="120" cy="80" rx="34" ry="30" />
+    <circle class="nucleus" cx="120" cy="80" r="10" />
+    <path class="neuron-axon" d="M 154 80 L 250 80" />
+    <path class="neuron-axon" d="M 250 80 L 285 55 M 250 80 L 295 80 M 250 80 L 285 105" />
+    <circle class="neuron-body" cx="285" cy="55" r="5" />
+    <circle class="neuron-body" cx="295" cy="80" r="5" />
+    <circle class="neuron-body" cx="285" cy="105" r="5" />
   </svg>
 </div>
 
@@ -218,6 +215,74 @@ window.addEventListener('pointercancel', () => {
   isCurrentOn = false;
   currentBtn.classList.remove('active');
 });
+
+// ===== Генератор извилистых дендритов =====
+(function buildDendrites() {
+  const g = document.getElementById('dendrites');
+  if (!g) return;
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const somaX = 120, somaY = 80;
+  const somaR = 34;
+
+  // Фиксированный seed — рисунок одинаковый при каждой загрузке.
+  // Поменяйте на Date.now() для случайного дерева при каждом обновлении.
+  let seed = 42;
+  function rand() {
+    seed = (seed * 1664525 + 1013904223) % 4294967296;
+    return seed / 4294967296;
+  }
+  function randRange(a, b) { return a + (b - a) * rand(); }
+
+  function branch(x, y, angle, length, width, depth) {
+    if (depth <= 0 || length < 4) return;
+
+    const bend = randRange(-0.5, 0.5);
+    const endAngle = angle + bend;
+    const ex = x + Math.cos(endAngle) * length;
+    const ey = y + Math.sin(endAngle) * length;
+
+    const c1x = x + Math.cos(angle + randRange(-0.4, 0.4)) * length * 0.4;
+    const c1y = y + Math.sin(angle + randRange(-0.4, 0.4)) * length * 0.4;
+    const c2x = x + Math.cos(endAngle + randRange(-0.4, 0.4)) * length * 0.6;
+    const c2y = y + Math.sin(endAngle + randRange(-0.4, 0.4)) * length * 0.6;
+
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('class', 'neuron-dendrite');
+    path.setAttribute('d',
+      `M ${x.toFixed(1)} ${y.toFixed(1)} ` +
+      `C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ` +
+        `${c2x.toFixed(1)} ${c2y.toFixed(1)}, ` +
+        `${ex.toFixed(1)} ${ey.toFixed(1)}`
+    );
+    path.setAttribute('stroke-width', width.toFixed(2));
+    g.appendChild(path);
+
+    const nChildren = depth > 2 ? 2 : (rand() < 0.6 ? 2 : 1);
+    for (let i = 0; i < nChildren; i++) {
+      const spread = randRange(0.35, 0.75) * (i === 0 ? -1 : 1);
+      branch(
+        ex, ey,
+        endAngle + spread,
+        length * randRange(0.6, 0.8),
+        width * 0.7,
+        depth - 1
+      );
+    }
+  }
+
+  const trunks = [
+    { angle: Math.PI * 0.95, length: 26, width: 2.4, depth: 4 },
+    { angle: Math.PI * 1.05, length: 30, width: 2.6, depth: 5 },
+    { angle: Math.PI * 1.15, length: 24, width: 2.2, depth: 4 }
+  ];
+
+  for (const t of trunks) {
+    const sx = somaX + Math.cos(t.angle) * somaR;
+    const sy = somaY + Math.sin(t.angle) * (somaR * 0.88);
+    branch(sx, sy, t.angle, t.length, t.width, t.depth);
+  }
+})();
 
 // ===== Один шаг модели =====
 function step() {
