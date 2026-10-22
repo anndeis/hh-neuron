@@ -38,44 +38,44 @@
     border-color: #7fd4ff;
   }
 
-  /* Цвета как у фиолетового нейрона (C), адаптированные под тёмный фон */
+  /* Синие цвета, как в предыдущей версии */
   .neuron-svg .neuron-body {
-    fill: #8a7ac8;  /* фиолетовое тело */
-    stroke: #b8a8ff;
+    fill: #5a6e9e;
+    stroke: #a8c0e8;
     stroke-width: 1.5;
     transition: fill 0.15s, stroke 0.15s;
   }
   .neuron-svg .neuron-axon {
-    stroke: #b8a8ff; /* светлый фиолетовый для аксона */
+    stroke: #a8c0e8;
     fill: none;
     stroke-linecap: round;
     stroke-linejoin: round;
     transition: stroke 0.15s;
   }
   .neuron-svg .neuron-dendrite {
-    stroke: #b8a8ff; /* дендриты того же цвета */
+    stroke: #a8c0e8;
     fill: none;
     stroke-linecap: round;
     transition: stroke 0.15s;
   }
   .neuron-svg .nucleus {
-    fill: #3ba8ff;   /* голубое ядро */
+    fill: #7fd4ff;
     transition: fill 0.15s;
   }
   .neuron-svg .synapse {
-    fill: #b8a8ff;
+    fill: #a8c0e8;
     transition: fill 0.15s;
   }
 
   /* Эффект вспышки */
   .neuron-wrap.firing .neuron-body {
-    fill: #d0c8ff;
+    fill: #7fd4ff;
     stroke: #ffffff;
-    filter: drop-shadow(0 0 12px #b8a8ff);
+    filter: drop-shadow(0 0 12px #7fd4ff);
   }
   .neuron-wrap.firing .neuron-axon {
     stroke: #ffffff;
-    filter: drop-shadow(0 0 10px #b8a8ff);
+    filter: drop-shadow(0 0 10px #7fd4ff);
   }
   .neuron-wrap.firing .neuron-dendrite {
     stroke: #ffffff;
@@ -85,7 +85,7 @@
   }
   .neuron-wrap.firing .synapse {
     fill: #ffffff;
-    filter: drop-shadow(0 0 8px #b8a8ff);
+    filter: drop-shadow(0 0 8px #7fd4ff);
   }
 
   .controls {
@@ -222,7 +222,7 @@ window.addEventListener('pointercancel', () => {
   currentBtn.classList.remove('active');
 });
 
-// ===== Генератор рисунка нейрона (похож на фиолетовый C) =====
+// ===== Генератор рисунка нейрона =====
 (function buildNeuron() {
   const gDen = document.getElementById('dendrites');
   const gAxon = document.getElementById('axon');
@@ -239,7 +239,6 @@ window.addEventListener('pointercancel', () => {
   }
   function randRange(a, b) { return a + (b - a) * rand(); }
 
-  // Универсальная функция рисования ветки (кривая Безье)
   function drawBranch(g, x, y, ex, ey, cx1, cy1, cx2, cy2, width, cls) {
     const path = document.createElementNS(SVG_NS, 'path');
     path.setAttribute('class', cls);
@@ -253,26 +252,19 @@ window.addEventListener('pointercancel', () => {
     g.appendChild(path);
   }
 
-  // === 1. Дендриты (звездчатые отростки вокруг тела) ===
-  // В отличие от прошлых версий, они исходят из тела и изящно извиваются.
+  // === 1. Дендриты (звездчатые) ===
   const denAngles = [
-    -Math.PI * 0.85, // вверх-влево
-    -Math.PI * 0.55, // вверх-вправо
-    -Math.PI * 0.15, // вправо-вверх
-     Math.PI * 0.15, // вправо-вниз
-     Math.PI * 0.55, // вниз-вправо
-     Math.PI * 0.85  // вниз-влево
+    -Math.PI * 0.85, -Math.PI * 0.55, -Math.PI * 0.15,
+     Math.PI * 0.15,  Math.PI * 0.55,  Math.PI * 0.85
   ];
 
   function drawDendriteTree(x, y, angle, len, width, depth) {
     if (depth <= 0) return;
 
-    // Легкий изгиб
     const endAngle = angle + randRange(-0.2, 0.2);
     const ex = x + Math.cos(endAngle) * len;
     const ey = y + Math.sin(endAngle) * len;
 
-    // Контрольные точки для плавности
     const c1x = x + Math.cos(angle) * len * 0.4;
     const c1y = y + Math.sin(angle) * len * 0.4;
     const c2x = ex - Math.cos(endAngle) * len * 0.2;
@@ -280,10 +272,8 @@ window.addEventListener('pointercancel', () => {
 
     drawBranch(gDen, x, y, ex, ey, c1x, c1y, c2x, c2y, width, 'neuron-dendrite');
 
-    // Ветвление
     const nChildren = depth > 1 ? 2 : 0;
     for (let i = 0; i < nChildren; i++) {
-      // Изящное расхождение
       const spread = randRange(0.3, 0.6) * (i === 0 ? -1 : 1);
       drawDendriteTree(
         ex, ey,
@@ -296,33 +286,25 @@ window.addEventListener('pointercancel', () => {
   }
 
   denAngles.forEach(angle => {
-    // Стартовая точка на границе эллипса
     const sx = somaX + Math.cos(angle) * somaRx * 0.8;
     const sy = somaY + Math.sin(angle) * somaRy * 0.8;
     drawDendriteTree(sx, sy, angle, 22, 2.0, 3);
   });
 
-  // === 2. Аксон (длинный и плавный) ===
-  // Начинается справа от тела и идет вправо, слегка извиваясь.
-  // В конце ветвится на "кисточку".
-  
-  // Главный ствол аксона (два сегмента для естественной дуги)
+  // === 2. Аксон (длинный, горизонтальный) ===
   const aX1 = somaX + somaRx * 0.9;
   const aY1 = somaY;
   const aX2 = 220;
-  const aY2 = somaY + 5; // чуть ниже
+  const aY2 = somaY + 5;
   const aX3 = 290;
-  const aY3 = somaY;     // возвращается на уровень
+  const aY3 = somaY;
 
-  // Сегмент 1: от тела до середины
   drawBranch(gAxon, aX1, aY1, aX2, aY2, 
     aX1 + 30, aY1 + 2, aX2 - 20, aY2 - 2, 4.0, 'neuron-axon');
   
-  // Сегмент 2: от середины до точки ветвления
   drawBranch(gAxon, aX2, aY2, aX3, aY3,
     aX2 + 20, aY2 + 2, aX3 - 20, aY3 - 2, 3.5, 'neuron-axon');
 
-  // Концевое разветвление (кисточка)
   function drawAxonTerminal(x, y, angle, len, width, depth) {
     if (depth <= 0) return;
 
@@ -337,7 +319,6 @@ window.addEventListener('pointercancel', () => {
 
     drawBranch(gAxon, x, y, ex, ey, c1x, c1y, c2x, c2y, width, 'neuron-axon');
 
-    // Синапс на конце
     if (depth === 1) {
       const c = document.createElementNS(SVG_NS, 'circle');
       c.setAttribute('class', 'synapse');
@@ -347,7 +328,6 @@ window.addEventListener('pointercancel', () => {
       gAxon.appendChild(c);
     }
 
-    // Ветвление
     const nChildren = depth > 1 ? 2 : 0;
     for (let i = 0; i < nChildren; i++) {
       const spread = randRange(0.2, 0.45) * (i === 0 ? -1 : 1);
@@ -361,8 +341,6 @@ window.addEventListener('pointercancel', () => {
     }
   }
 
-  // Запускаем ветвление от конца аксона (aX3, aY3) вправо
-  // Сделаем 3 главные ветви, чтобы было похоже на кисточку
   drawAxonTerminal(aX3, aY3, -0.15, 28, 2.5, 3);
   drawAxonTerminal(aX3, aY3, 0.0, 32, 2.5, 3);
   drawAxonTerminal(aX3, aY3, 0.15, 28, 2.5, 3);
