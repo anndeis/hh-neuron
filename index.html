@@ -74,7 +74,7 @@
 <div class="controls">
   <div class="slider-group">
     <label for="amp">Амплитуда тока:</label>
-    <input type="range" id="amp" min="0" max="40" step="0.5" value="10">
+    <input type="range" id="amp" min="0" max="15" step="0.1" value="10">
     <span class="value" id="ampVal">10 мкА/см²</span>
   </div>
   <button id="currentBtn">ТОК</button>
@@ -104,8 +104,8 @@ let h = alphaH(V) / (alphaH(V) + betaH(V));
 let n = alphaN(V) / (alphaN(V) + betaN(V));
 
 // ===== Время и график =====
-const dt = 0.005;            // шаг интегрирования, мс (меньше = плавнее)
-const tMax = 240;             // окно графика, мс модельного времени
+const dt = 0.01;            // шаг интегрирования, мс (меньше = плавнее)
+const tMax = 200;             // окно графика, мс модельного времени
 const TIME_SCALE = 1;       // 1 сек реального = 10 мс модельного (было 50)
 const history = [];
 let simTime = 0;
