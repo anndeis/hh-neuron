@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Симулятор нейрона Ходжкина-Хаксли</title>
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    background: #0f1420;
+    color: #e6e6e6;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h1 { font-size: 20px; font-weight: 500; margin-bottom: 16px; }
+  canvas {
+    background: #0a0e17;
+    border: 1px solid #2a3550;
+    border-radius: 8px;
+    display: block;
+  }
+  .controls {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .slider-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  input[type=range] { width: 220px; }
+  #currentBtn {
+    padding: 10px 28px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    background: #3a4a70;
+    color: #fff;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  #currentBtn.active { background: #d94848; }
+  #currentBtn:active { transform: translateY(1px); }
+  .value {
+    font-variant-numeric: tabular-nums;
+    min-width: 60px;
+    text-align: right;
+    color: #7fd4ff;
+  }
+</style>
+</head>
+<body>
+
+<h1>Мембранный потенциал (модель Ходжкина-Хаксли)</h1>
+<canvas id="plot" width="800" height="400"></canvas>
+
+<div class="controls">
+  <div class="slider-group">
+    <label for="amp">Амплитуда тока:</label>
+    <input type="range" id="amp" min="0" max="40" step="0.5" value="10">
+    <span class="value" id="ampVal">10 мкА/см²</span>
+  </div>
+  <button id="currentBtn">ТОК</button>
+</div>
+
+<script>
+// ===== Параметры модели Ходжкина-Хаксли =====
+const Cm = 1.0;      // ёмкость мембраны
+const gNa = 120.0;   // макс. проводимость Na
+const gK  = 36.0;    // макс. проводимость K
+const gL  = 0.3;     // проводимость утечки
+const ENa = 50.0;    // потенциал реверсии Na
+const EK  = -77.0;   // потенциал реверсии K
+const EL  = -54.4;   // потенциал реверсии утечки
+
+// Функции скоростей воротных переменных
+function alphaM(V) { return 0.1 * (V + 40) / (1 - Math.exp(-(V + 40) / 10)); }
+function betaM(V)  { return 4.0 * Math.exp(-(V + 65) / 18); }
+function alphaH(V) { return 0.07 * Math.exp(-(V + 65) / 20); }
+function betaH(V)  { return 1.0 / (1 + Math.exp(-(V + 35) / 10)); }
+function alphaN(V) { return 0.01 * (V + 55) / (1 - Math.exp(-(V + 55) / 10)); }
+function betaN(V)  { return 0.125 * Math.exp(-(V + 65) / 80); }
+
+// Состояние модели
+let V = -65.0;
+let m = alphaM(V) / (alphaM(V) + betaM(V));
+let h = alphaH(V) / (alphaH(V) + betaH(V));
+let n = alphaN(V) / (alphaN(V) + betaN(V));
+
+// ===== Время и график =====
+const dt = 0.01;              // шаг интегрирования, мс
+const tMax = 100;             // сколько мс показываем на графике
+const history = [];           // массив {t, V}
+let simTime = 0;
+let lastRealTime = performance.now();
+
+// ===== Управление =====
+const ampSlider = document.getElementById('amp');
+const ampVal    = document.getElementById('ampVal');
+const currentBtn = document.getElementById('currentBtn');
+let isCurrentOn = false;
+
+ampSlider.addEventListener('input', () => {
+  ampVal.textContent = ampSlider.value + ' мкА/см²';
+});
+
+// Ток действует только пока зажата кнопка
+currentBtn.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  isCurrentOn = true;
+  currentBtn.classList.add('active');
+});
+window.addEventListener('pointerup', () => {
+  isCurrentOn = false;
+  currentBtn.classList.remove('active');
+});
+window.addEventListener('pointercancel', () => {
+  isCurrentOn = false;
+  currentBtn.classList.remove('active');
+});
+
+// ===== Один шаг модели (метод Эйлера) =====
+function step() {
+  const Iext = isCurrentOn ? parseFloat(ampSlider.value) : 0;
+
+  const INa = gNa * m * m * m * h * (V - ENa);
+  const IK  = gK  * n * n * n * n * (V - EK);
+  const IL  = gL  * (V - EL);
+
+  const dV = (Iext - INa - IK - IL) / Cm;
+  const dm = alphaM(V) * (1 - m) - betaM(V) * m;
+  const dh = alphaH(V) * (1 - h) - betaH(V) * h;
+  const dn = alphaN(V) * (1 - n) - betaN(V) * n;
+
+  V += dV * dt;
+  m += dm * dt;
+  h += dh * dt;
+  n += dn * dt;
+}
+
+// ===== Отрисовка графика =====
+const canvas = document.getElementById('plot');
+const ctx = canvas.getContext('2d');
+const W = canvas.width;
+const H = canvas.height;
+const padL = 50, padR = 15, padT = 15, padB = 30;
+
+const Vmin = -90, Vmax = 50; // диапазон оси Y
+
+function xToPx(t) {
+  return padL + (t / tMax) * (W - padL - padR);
+}
+function vToPy(v) {
+  return padT + (1 - (v - Vmin) / (Vmax - Vmin)) * (H - padT - padB);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Оси
+  ctx.strokeStyle = '#2a3550';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padL, padT);
+  ctx.lineTo(padL, H - padB);
+  ctx.lineTo(W - padR, H - padB);
+  ctx.stroke();
+
+  // Подписи оси Y
+  ctx.fillStyle = '#7a89a8';
+  ctx.font = '12px system-ui';
+  ctx.textAlign = 'right';
+  for (let v = Vmin; v <= Vmax; v += 20) {
+    const y = vToPy(v);
+    ctx.fillText(v, padL - 8, y + 4);
+    ctx.strokeStyle = '#1a2136';
+    ctx.beginPath();
+    ctx.moveTo(padL, y);
+    ctx.lineTo(W - padR, y);
+    ctx.stroke();
+  }
+
+  // Подписи оси X (время)
+  ctx.textAlign = 'center';
+  for (let t = 0; t <= tMax; t += 20) {
+    const x = xToPx(t);
+    ctx.fillText(t, x, H - padB + 16);
+  }
+
+  // Подпись осей
+  ctx.fillStyle = '#7a89a8';
+  ctx.textAlign = 'left';
+  ctx.fillText('V (мВ)', padL - 40, padT - 2);
+  ctx.textAlign = 'right';
+  ctx.fillText('t (мс)', W - padR, H - 6);
+
+  // Кривая потенциала
+  if (history.length > 1) {
+    ctx.strokeStyle = '#7fd4ff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const t0 = simTime - tMax;
+    for (let i = 0; i < history.length; i++) {
+      const p = history[i];
+      if (p.t < t0) continue;
+      const x = xToPx(p.t - t0);
+      const y = vToPy(p.V);
+      if (i === 0 || p.t - history[i-1].t > dt * 5) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.stroke();
+  }
+}
+
+// ===== Главный цикл =====
+function loop(now) {
+  // Сколько реального времени прошло -> сколько шагов модели сделать
+  const realDt = Math.min((now - lastRealTime) / 1000, 0.1); // сек, защита от больших скачков
+  lastRealTime = now;
+
+  // Ускорение: 1 сек реального времени = 50 мс модельного
+  const modelMs = realDt * 1000 * 50;
+  const steps = Math.min(Math.floor(modelMs / dt), 2000);
+
+  for (let i = 0; i < steps; i++) {
+    step();
+    simTime += dt;
+    history.push({ t: simTime, V: V });
+  }
+
+  // Обрезаем историю, чтобы не росла бесконечно
+  const cutoff = simTime - tMax * 2;
+  while (history.length && history[0].t < cutoff) history.shift();
+
+  draw();
+  requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
+</script>
+
+</body>
+</html>
