@@ -23,6 +23,64 @@
   }
   #plotV { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: none; }
   #plotI { border-top-left-radius: 0; border-top-right-radius: 0; }
+
+  /* ===== Нейрон сверху ===== */
+  .neuron-wrap {
+    margin-bottom: 16px;
+    padding: 16px 24px;
+    background: #0a0e17;
+    border: 1px solid #2a3550;
+    border-radius: 12px;
+    transition: box-shadow 0.15s;
+  }
+  .neuron-wrap.firing {
+    box-shadow: 0 0 24px rgba(127, 212, 255, 0.35);
+    border-color: #7fd4ff;
+  }
+
+  .neuron-svg .neuron-body,
+  .neuron-svg .neuron-axon,
+  .neuron-svg .neuron-dendrite {
+    transition: fill 0.15s, stroke 0.15s, filter 0.15s;
+  }
+  .neuron-svg .neuron-body {
+    fill: #2a3550;
+    stroke: #4a5a80;
+    stroke-width: 2;
+  }
+  .neuron-svg .neuron-axon {
+    stroke: #4a5a80;
+    stroke-width: 3;
+    fill: none;
+    stroke-linecap: round;
+  }
+  .neuron-svg .neuron-dendrite {
+    stroke: #4a5a80;
+    stroke-width: 2.5;
+    fill: none;
+    stroke-linecap: round;
+  }
+  .neuron-svg .nucleus {
+    fill: #3a4a70;
+    transition: fill 0.15s;
+  }
+
+  .neuron-wrap.firing .neuron-body {
+    fill: #7fd4ff;
+    stroke: #b8e8ff;
+    filter: drop-shadow(0 0 8px #7fd4ff);
+  }
+  .neuron-wrap.firing .neuron-axon {
+    stroke: #7fd4ff;
+    filter: drop-shadow(0 0 6px #7fd4ff);
+  }
+  .neuron-wrap.firing .neuron-dendrite {
+    stroke: #5aa8d8;
+  }
+  .neuron-wrap.firing .nucleus {
+    fill: #ffffff;
+  }
+
   .controls {
     margin-top: 16px;
     display: flex;
@@ -70,6 +128,20 @@
 
 <h1>Мембранный потенциал и ток (модель Ходжкина-Хаксли)</h1>
 
+<!-- ===== Нейрон (теперь сверху) ===== -->
+<div class="neuron-wrap" id="neuronWrap">
+  <svg class="neuron-svg" width="260" height="120" viewBox="0 0 260 120">
+    <path class="neuron-dendrite" d="M 60 60 L 25 30 M 60 60 L 15 60 M 60 60 L 25 90 M 35 45 L 10 20 M 35 75 L 10 100" />
+    <ellipse class="neuron-body" cx="90" cy="60" rx="32" ry="28" />
+    <circle class="nucleus" cx="90" cy="60" r="9" />
+    <path class="neuron-axon" d="M 122 60 L 200 60" />
+    <path class="neuron-axon" d="M 200 60 L 230 40 M 200 60 L 240 60 M 200 60 L 230 80" />
+    <circle class="neuron-body" cx="230" cy="40" r="4" />
+    <circle class="neuron-body" cx="240" cy="60" r="4" />
+    <circle class="neuron-body" cx="230" cy="80" r="4" />
+  </svg>
+</div>
+
 <canvas id="plotV" width="800" height="340"></canvas>
 <canvas id="plotI" width="800" height="120"></canvas>
 
@@ -79,7 +151,7 @@
   <div class="slider-group">
     <label for="amp">Амплитуда тока:</label>
     <input type="range" id="amp" min="0" max="15" step="0.1" value="10">
-    <span class="value" id="ampVal">10 мкА/см²</span>
+    <span class="value" id="ampVal">10.0 мкА/см²</span>
   </div>
   <button id="currentBtn">ТОК</button>
 </div>
@@ -114,6 +186,11 @@ const TIME_SCALE = 6;
 const history = [];
 let simTime = 0;
 
+// ===== Порог для вспышки =====
+const THRESHOLD = -55;
+const FLASH_MS = 150;
+let flashUntil = 0;
+
 // ===== Управление =====
 const ampSlider = document.getElementById('amp');
 const ampVal    = document.getElementById('ampVal');
@@ -121,10 +198,11 @@ const currentBtn = document.getElementById('currentBtn');
 const vNowEl = document.getElementById('vNow');
 const iNowEl = document.getElementById('iNow');
 const tNowEl = document.getElementById('tNow');
+const neuronWrap = document.getElementById('neuronWrap');
 let isCurrentOn = false;
 
 ampSlider.addEventListener('input', () => {
-  ampVal.textContent = ampSlider.value + ' мкА/см²';
+  ampVal.textContent = parseFloat(ampSlider.value).toFixed(1) + ' мкА/см²';
 });
 
 currentBtn.addEventListener('pointerdown', (e) => {
@@ -154,10 +232,15 @@ function step() {
   const dh = alphaH(V) * (1 - h) - betaH(V) * h;
   const dn = alphaN(V) * (1 - n) - betaN(V) * n;
 
+  const Vprev = V;
   V += dV * dt;
   m += dm * dt;
   h += dh * dt;
   n += dn * dt;
+
+  if (Vprev < THRESHOLD && V >= THRESHOLD) {
+    flashUntil = performance.now() + FLASH_MS;
+  }
 
   return Iext;
 }
@@ -172,16 +255,15 @@ const WV = canvasV.width, HV = canvasV.height;
 const WI = canvasI.width, HI = canvasI.height;
 const padL = 50, padR = 15, padT = 15, padB = 30;
 const Vmin = -90, Vmax = 50;
-const Imax = 50;            // максимальный ток на графике, мкА/см²
+const Imax = 15;
 
 function xToPx(t, W) { return padL + (t / tMax) * (W - padL - padR); }
 function vToPy(v, H) { return padT + (1 - (v - Vmin) / (Vmax - Vmin)) * (H - padT - padB); }
 function iToPy(i, H) { return padT + (1 - i / Imax) * (H - padT - padB); }
 
-// Подбор "красивого" шага для подписи оси X
 function niceStep(range, target) {
   const raw = range / target;
-  const steps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000];
+  const steps = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000];
   return steps.find(s => s >= raw) || steps[steps.length - 1];
 }
 
@@ -189,7 +271,6 @@ function draw() {
   // ===== Верхний график: V(t) =====
   ctxV.clearRect(0, 0, WV, HV);
 
-  // Горизонтальная сетка и подписи Y
   ctxV.font = '12px system-ui';
   ctxV.textAlign = 'right';
   const stepV = niceStep(Vmax - Vmin, 7);
@@ -204,7 +285,17 @@ function draw() {
     ctxV.fillText(v, padL - 8, y + 4);
   }
 
-  // Оси
+  if (THRESHOLD > Vmin && THRESHOLD < Vmax) {
+    const yTh = vToPy(THRESHOLD, HV);
+    ctxV.strokeStyle = 'rgba(255, 183, 77, 0.45)';
+    ctxV.setLineDash([5, 5]);
+    ctxV.beginPath();
+    ctxV.moveTo(padL, yTh);
+    ctxV.lineTo(WV - padR, yTh);
+    ctxV.stroke();
+    ctxV.setLineDash([]);
+  }
+
   ctxV.strokeStyle = '#2a3550';
   ctxV.beginPath();
   ctxV.moveTo(padL, padT);
@@ -212,7 +303,6 @@ function draw() {
   ctxV.lineTo(WV - padR, HV - padB);
   ctxV.stroke();
 
-  // Ось X — вертикальные засечки синхронизированы с нижним графиком
   ctxV.textAlign = 'center';
   ctxV.fillStyle = '#7a89a8';
   const stepT = niceStep(tMax, 7);
@@ -225,12 +315,10 @@ function draw() {
     ctxV.stroke();
   }
 
-  // Подпись оси Y
   ctxV.textAlign = 'left';
   ctxV.fillStyle = '#7a89a8';
   ctxV.fillText('V (мВ)', padL - 40, padT - 2);
 
-  // Кривая V
   if (history.length > 1) {
     ctxV.strokeStyle = '#7fd4ff';
     ctxV.lineWidth = 2;
@@ -252,10 +340,10 @@ function draw() {
   // ===== Нижний график: I(t) =====
   ctxI.clearRect(0, 0, WI, HI);
 
-  // Сетка Y
   ctxI.font = '12px system-ui';
   ctxI.textAlign = 'right';
-  for (let i = 0; i <= Imax; i += 10) {
+  const stepI = niceStep(Imax, 4);
+  for (let i = 0; i <= Imax + 1e-9; i += stepI) {
     const y = iToPy(i, HI);
     ctxI.strokeStyle = '#1a2136';
     ctxI.beginPath();
@@ -263,10 +351,9 @@ function draw() {
     ctxI.lineTo(WI - padR, y);
     ctxI.stroke();
     ctxI.fillStyle = '#7a89a8';
-    ctxI.fillText(i, padL - 8, y + 4);
+    ctxI.fillText(i.toFixed(i < 10 ? 1 : 0), padL - 8, y + 4);
   }
 
-  // Оси
   ctxI.strokeStyle = '#2a3550';
   ctxI.beginPath();
   ctxI.moveTo(padL, padT);
@@ -274,7 +361,6 @@ function draw() {
   ctxI.lineTo(WI - padR, HI - padB);
   ctxI.stroke();
 
-  // Засечки и подписи X
   ctxI.textAlign = 'center';
   ctxI.fillStyle = '#7a89a8';
   for (let t = 0; t <= tMax + 1e-9; t += stepT) {
@@ -287,14 +373,12 @@ function draw() {
     ctxI.fillText(t, x, HI - padB + 16);
   }
 
-  // Подписи осей
   ctxI.textAlign = 'left';
   ctxI.fillStyle = '#7a89a8';
   ctxI.fillText('I (мкА/см²)', padL - 42, padT - 2);
   ctxI.textAlign = 'right';
   ctxI.fillText('t (мс)', WI - padR, HI - 4);
 
-  // Кривая I
   if (history.length > 1) {
     ctxI.strokeStyle = '#ffb74d';
     ctxI.lineWidth = 2;
@@ -314,7 +398,7 @@ function draw() {
   }
 }
 
-// ===== Главный цикл (равномерный) =====
+// ===== Главный цикл =====
 const stepsPerMsReal = TIME_SCALE / dt / 1000;
 let accumMs = 0;
 let lastRealTime = performance.now();
@@ -327,7 +411,7 @@ function loop(now) {
   let steps = Math.floor(accumMs * stepsPerMsReal);
   accumMs -= steps * (1 / stepsPerMsReal);
   if (steps < 0) steps = 0;
-  steps = Math.min(steps, 500);
+  steps = Math.min(steps, 2000);
 
   let lastI = 0;
   for (let i = 0; i < steps; i++) {
@@ -336,8 +420,13 @@ function loop(now) {
     history.push({ t: simTime, V: V, I: lastI });
   }
 
-  const cutoff = simTime - tMax * 1.5;
-  while (history.length && history[0].t < cutoff) history.shift();
+  const cutoff = simTime - tMax;
+  let drop = 0;
+  while (drop < history.length && history[drop].t < cutoff) drop++;
+  if (drop > 0) history.splice(0, drop);
+
+  if (now < flashUntil) neuronWrap.classList.add('firing');
+  else neuronWrap.classList.remove('firing');
 
   vNowEl.textContent = V.toFixed(1);
   iNowEl.textContent = (isCurrentOn ? parseFloat(ampSlider.value) : 0).toFixed(1);
