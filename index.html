@@ -27,7 +27,7 @@
   /* ===== Нейрон сверху ===== */
   .neuron-wrap {
     margin-bottom: 16px;
-    padding: 16px 24px;
+    padding: 8px 14px;          /* рамка уже */
     background: #16203a;
     border: 1px solid #4a5a80;
     border-radius: 12px;
@@ -135,10 +135,10 @@
 
 <!-- ===== Нейрон ===== -->
 <div class="neuron-wrap" id="neuronWrap">
-  <svg class="neuron-svg" width="380" height="170" viewBox="0 0 380 170" xmlns="http://www.w3.org/2000/svg">
+  <svg class="neuron-svg" width="380" height="150" viewBox="0 0 380 150" xmlns="http://www.w3.org/2000/svg">
     <g id="dendrites"></g>
-    <ellipse class="neuron-body" cx="120" cy="85" rx="34" ry="30" />
-    <circle class="nucleus" cx="120" cy="85" r="10" />
+    <ellipse class="neuron-body" cx="110" cy="75" rx="26" ry="23" />
+    <circle class="nucleus" cx="110" cy="75" r="8" />
     <g id="axon"></g>
   </svg>
 </div>
@@ -226,8 +226,8 @@ window.addEventListener('pointercancel', () => {
   if (!g) return;
 
   const SVG_NS = 'http://www.w3.org/2000/svg';
-  const somaX = 120, somaY = 85;
-  const somaR = 34;
+  const somaX = 110, somaY = 75;
+  const somaR = 26;
 
   let seed = 42;
   function rand() {
@@ -274,9 +274,9 @@ window.addEventListener('pointercancel', () => {
   }
 
   const trunks = [
-    { angle: Math.PI * 0.95, length: 26, width: 2.4, depth: 4 },
-    { angle: Math.PI * 1.05, length: 30, width: 2.6, depth: 5 },
-    { angle: Math.PI * 1.15, length: 24, width: 2.2, depth: 4 }
+    { angle: Math.PI * 0.95, length: 22, width: 2.2, depth: 4 },
+    { angle: Math.PI * 1.05, length: 26, width: 2.4, depth: 5 },
+    { angle: Math.PI * 1.15, length: 20, width: 2.0, depth: 4 }
   ];
 
   for (const t of trunks) {
@@ -286,12 +286,14 @@ window.addEventListener('pointercancel', () => {
   }
 })();
 
-// ===== Генератор извилистого аксона с концевыми ветвлениями =====
+// ===== Генератор аксона — "одно толстое длинное дерево" =====
 (function buildAxon() {
   const g = document.getElementById('axon');
   if (!g) return;
 
   const SVG_NS = 'http://www.w3.org/2000/svg';
+  const somaX = 110, somaY = 75;
+  const somaR = 26;
 
   let seed = 137;
   function rand() {
@@ -300,76 +302,60 @@ window.addEventListener('pointercancel', () => {
   }
   function randRange(a, b) { return a + (b - a) * rand(); }
 
-  function wavySegment(x, y, ex, ey, width, amp) {
-    const dx = ex - x, dy = ey - y;
-    const len = Math.hypot(dx, dy) || 1;
-    const nx = -dy / len, ny = dx / len;
+  // Та же рекурсивная логика, что у дендритов, но с другими параметрами
+  function branch(x, y, angle, length, width, depth) {
+    if (depth <= 0 || length < 4) return;
 
-    const off1 = randRange(-amp, amp);
-    const off2 = randRange(-amp, amp);
+    const bend = randRange(-0.45, 0.45);
+    const endAngle = angle + bend;
+    const ex = x + Math.cos(endAngle) * length;
+    const ey = y + Math.sin(endAngle) * length;
 
-    const c1x = x + dx * 0.33 + nx * off1;
-    const c1y = y + dy * 0.33 + ny * off1;
-    const c2x = x + dx * 0.66 + nx * off2;
-    const c2y = y + dy * 0.66 + ny * off2;
+    const c1x = x + Math.cos(angle + randRange(-0.35, 0.35)) * length * 0.4;
+    const c1y = y + Math.sin(angle + randRange(-0.35, 0.35)) * length * 0.4;
+    const c2x = x + Math.cos(endAngle + randRange(-0.35, 0.35)) * length * 0.6;
+    const c2y = y + Math.sin(endAngle + randRange(-0.35, 0.35)) * length * 0.6;
 
     const path = document.createElementNS(SVG_NS, 'path');
     path.setAttribute('class', 'neuron-axon');
-    path.setAttribute('stroke-width', width.toFixed(2));
     path.setAttribute('d',
       `M ${x.toFixed(1)} ${y.toFixed(1)} ` +
       `C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ` +
         `${c2x.toFixed(1)} ${c2y.toFixed(1)}, ` +
         `${ex.toFixed(1)} ${ey.toFixed(1)}`
     );
+    path.setAttribute('stroke-width', width.toFixed(2));
     g.appendChild(path);
-  }
 
-  function synapse(x, y) {
-    const c = document.createElementNS(SVG_NS, 'circle');
-    c.setAttribute('class', 'synapse');
-    c.setAttribute('cx', x.toFixed(1));
-    c.setAttribute('cy', y.toFixed(1));
-    c.setAttribute('r', '4');
-    g.appendChild(c);
-  }
+    // На конце ветки — синапс
+    if (depth === 1) {
+      const c = document.createElementNS(SVG_NS, 'circle');
+      c.setAttribute('class', 'synapse');
+      c.setAttribute('cx', ex.toFixed(1));
+      c.setAttribute('cy', ey.toFixed(1));
+      c.setAttribute('r', '3.5');
+      g.appendChild(c);
+    }
 
-  // Основной ствол: два извилистых сегмента от тела до точки ветвления
-  const startX = 154, startY = 85;
-  const midX = 215, midY = 85;
-  const branchX = 265, branchY = 85;
-
-  wavySegment(startX, startY, midX, midY, 3.5, 2.5);
-  wavySegment(midX, midY, branchX, branchY, 3.0, 2.5);
-
-  // Концевые терминали веером
-  const terminals = [
-    { angle: -0.60, length: 36, width: 2.2 },
-    { angle: -0.28, length: 46, width: 2.4 },
-    { angle:  0.02, length: 52, width: 2.5 },
-    { angle:  0.32, length: 46, width: 2.4 },
-    { angle:  0.62, length: 36, width: 2.2 }
-  ];
-
-  for (const t of terminals) {
-    const a = t.angle + randRange(-0.08, 0.08);
-    const len = t.length * randRange(0.9, 1.1);
-    const ex = branchX + Math.cos(a) * len;
-    const ey = branchY + Math.sin(a) * len;
-
-    wavySegment(branchX, branchY, ex, ey, t.width, 3.5);
-    synapse(ex, ey);
-
-    // Вторичные веточки примерно у 60% терминалей
-    if (rand() < 0.6) {
-      const a2 = a + randRange(-0.5, 0.5);
-      const len2 = len * randRange(0.45, 0.65);
-      const ex2 = ex + Math.cos(a2) * len2;
-      const ey2 = ey + Math.sin(a2) * len2;
-      wavySegment(ex, ey, ex2, ey2, t.width * 0.7, 2.5);
-      synapse(ex2, ey2);
+    // Меньше ветвления, чем у дендритов — аксон читается как ствол с кисточкой
+    const nChildren = depth > 2 ? 2 : (rand() < 0.5 ? 2 : 1);
+    for (let i = 0; i < nChildren; i++) {
+      const spread = randRange(0.25, 0.55) * (i === 0 ? -1 : 1);
+      branch(
+        ex, ey,
+        endAngle + spread,
+        length * randRange(0.65, 0.8),
+        width * 0.75,
+        depth - 1
+      );
     }
   }
+
+  // Стартовая точка — на правом краю тела
+  const startX = somaX + somaR;
+  const startY = somaY;
+  // Один длинный ствол вправо, глубина 4 → ствол + 3 уровня ветвления на конце
+  branch(startX, startY, 0.0, 48, 5.5, 4);
 })();
 
 // ===== Один шаг модели =====
