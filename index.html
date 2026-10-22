@@ -21,6 +21,8 @@
     border-radius: 8px;
     display: block;
   }
+  #plotV { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: none; }
+  #plotI { border-top-left-radius: 0; border-top-right-radius: 0; }
   .controls {
     margin-top: 16px;
     display: flex;
@@ -66,10 +68,12 @@
 </head>
 <body>
 
-<h1>Мембранный потенциал (модель Ходжкина-Хаксли)</h1>
-<canvas id="plot" width="800" height="400"></canvas>
+<h1>Мембранный потенциал и ток (модель Ходжкина-Хаксли)</h1>
 
-<div class="readout">V = <b id="vNow">-65.0</b> мВ &nbsp;|&nbsp; t = <b id="tNow">0.0</b> мс</div>
+<canvas id="plotV" width="800" height="340"></canvas>
+<canvas id="plotI" width="800" height="120"></canvas>
+
+<div class="readout">V = <b id="vNow">-65.0</b> мВ &nbsp;|&nbsp; I = <b id="iNow">0.0</b> мкА/см² &nbsp;|&nbsp; t = <b id="tNow">0.0</b> мс</div>
 
 <div class="controls">
   <div class="slider-group">
@@ -104,18 +108,18 @@ let h = alphaH(V) / (alphaH(V) + betaH(V));
 let n = alphaN(V) / (alphaN(V) + betaN(V));
 
 // ===== Время и график =====
-const dt = 0.001;            // шаг интегрирования, мс (меньше = плавнее)
-const tMax = 200;             // окно графика, мс модельного времени
-const TIME_SCALE = 0.1;       // 1 сек реального = 10 мс модельного (было 50)
+const dt = 0.001;
+const tMax = 200;
+const TIME_SCALE = 1;
 const history = [];
 let simTime = 0;
-let lastRealTime = performance.now();
 
 // ===== Управление =====
 const ampSlider = document.getElementById('amp');
 const ampVal    = document.getElementById('ampVal');
 const currentBtn = document.getElementById('currentBtn');
 const vNowEl = document.getElementById('vNow');
+const iNowEl = document.getElementById('iNow');
 const tNowEl = document.getElementById('tNow');
 let isCurrentOn = false;
 
@@ -137,7 +141,7 @@ window.addEventListener('pointercancel', () => {
   currentBtn.classList.remove('active');
 });
 
-// ===== Один шаг модели (метод Эйлера) =====
+// ===== Один шаг модели =====
 function step() {
   const Iext = isCurrentOn ? parseFloat(ampSlider.value) : 0;
 
@@ -154,121 +158,195 @@ function step() {
   m += dm * dt;
   h += dh * dt;
   n += dn * dt;
+
+  return Iext;
 }
 
 // ===== Отрисовка =====
-const canvas = document.getElementById('plot');
-const ctx = canvas.getContext('2d');
-const W = canvas.width;
-const H = canvas.height;
+const canvasV = document.getElementById('plotV');
+const canvasI = document.getElementById('plotI');
+const ctxV = canvasV.getContext('2d');
+const ctxI = canvasI.getContext('2d');
+
+const WV = canvasV.width, HV = canvasV.height;
+const WI = canvasI.width, HI = canvasI.height;
 const padL = 50, padR = 15, padT = 15, padB = 30;
 const Vmin = -90, Vmax = 50;
+const Imax = 50;            // максимальный ток на графике, мкА/см²
 
-function xToPx(t) { return padL + (t / tMax) * (W - padL - padR); }
-function vToPy(v) { return padT + (1 - (v - Vmin) / (Vmax - Vmin)) * (H - padT - padB); }
+function xToPx(t, W) { return padL + (t / tMax) * (W - padL - padR); }
+function vToPy(v, H) { return padT + (1 - (v - Vmin) / (Vmax - Vmin)) * (H - padT - padB); }
+function iToPy(i, H) { return padT + (1 - i / Imax) * (H - padT - padB); }
+
+// Подбор "красивого" шага для подписи оси X
+function niceStep(range, target) {
+  const raw = range / target;
+  const steps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000];
+  return steps.find(s => s >= raw) || steps[steps.length - 1];
+}
 
 function draw() {
-  ctx.clearRect(0, 0, W, H);
+  // ===== Верхний график: V(t) =====
+  ctxV.clearRect(0, 0, WV, HV);
 
-  // Сетка и ось Y
-  ctx.font = '12px system-ui';
-  ctx.textAlign = 'right';
-  for (let v = Vmin; v <= Vmax; v += 20) {
-    const y = vToPy(v);
-    ctx.strokeStyle = '#1a2136';
-    ctx.beginPath();
-    ctx.moveTo(padL, y);
-    ctx.lineTo(W - padR, y);
-    ctx.stroke();
-    ctx.fillStyle = '#7a89a8';
-    ctx.fillText(v, padL - 8, y + 4);
+  // Горизонтальная сетка и подписи Y
+  ctxV.font = '12px system-ui';
+  ctxV.textAlign = 'right';
+  const stepV = niceStep(Vmax - Vmin, 7);
+  for (let v = Vmin; v <= Vmax + 1e-9; v += stepV) {
+    const y = vToPy(v, HV);
+    ctxV.strokeStyle = '#1a2136';
+    ctxV.beginPath();
+    ctxV.moveTo(padL, y);
+    ctxV.lineTo(WV - padR, y);
+    ctxV.stroke();
+    ctxV.fillStyle = '#7a89a8';
+    ctxV.fillText(v, padL - 8, y + 4);
   }
 
   // Оси
-  ctx.strokeStyle = '#2a3550';
-  ctx.beginPath();
-  ctx.moveTo(padL, padT);
-  ctx.lineTo(padL, H - padB);
-  ctx.lineTo(W - padR, H - padB);
-  ctx.stroke();
+  ctxV.strokeStyle = '#2a3550';
+  ctxV.beginPath();
+  ctxV.moveTo(padL, padT);
+  ctxV.lineTo(padL, HV - padB);
+  ctxV.lineTo(WV - padR, HV - padB);
+  ctxV.stroke();
 
-  // Ось X
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#7a89a8';
-  for (let t = 0; t <= tMax; t += 10) {
-    const x = xToPx(t);
-    ctx.fillText(t, x, H - padB + 16);
+  // Ось X — вертикальные засечки синхронизированы с нижним графиком
+  ctxV.textAlign = 'center';
+  ctxV.fillStyle = '#7a89a8';
+  const stepT = niceStep(tMax, 7);
+  for (let t = 0; t <= tMax + 1e-9; t += stepT) {
+    const x = xToPx(t, WV);
+    ctxV.strokeStyle = '#1a2136';
+    ctxV.beginPath();
+    ctxV.moveTo(x, padT);
+    ctxV.lineTo(x, HV - padB);
+    ctxV.stroke();
   }
 
-  // Подписи осей
-  ctx.textAlign = 'left';
-  ctx.fillText('V (мВ)', padL - 40, padT - 2);
-  ctx.textAlign = 'right';
-  ctx.fillText('t (мс)', W - padR, H - 6);
+  // Подпись оси Y
+  ctxV.textAlign = 'left';
+  ctxV.fillStyle = '#7a89a8';
+  ctxV.fillText('V (мВ)', padL - 40, padT - 2);
 
-  // Кривая
+  // Кривая V
   if (history.length > 1) {
-    ctx.strokeStyle = '#7fd4ff';
-    ctx.lineWidth = 2;
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
+    ctxV.strokeStyle = '#7fd4ff';
+    ctxV.lineWidth = 2;
+    ctxV.lineJoin = 'round';
+    ctxV.beginPath();
     const t0 = simTime - tMax;
     let started = false;
     for (let i = 0; i < history.length; i++) {
       const p = history[i];
       if (p.t < t0) continue;
-      const x = xToPx(p.t - t0);
-      const y = vToPy(p.V);
-      if (!started) { ctx.moveTo(x, y); started = true; }
-      else ctx.lineTo(x, y);
+      const x = xToPx(p.t - t0, WV);
+      const y = vToPy(p.V, HV);
+      if (!started) { ctxV.moveTo(x, y); started = true; }
+      else ctxV.lineTo(x, y);
     }
-    ctx.stroke();
+    ctxV.stroke();
+  }
+
+  // ===== Нижний график: I(t) =====
+  ctxI.clearRect(0, 0, WI, HI);
+
+  // Сетка Y
+  ctxI.font = '12px system-ui';
+  ctxI.textAlign = 'right';
+  for (let i = 0; i <= Imax; i += 10) {
+    const y = iToPy(i, HI);
+    ctxI.strokeStyle = '#1a2136';
+    ctxI.beginPath();
+    ctxI.moveTo(padL, y);
+    ctxI.lineTo(WI - padR, y);
+    ctxI.stroke();
+    ctxI.fillStyle = '#7a89a8';
+    ctxI.fillText(i, padL - 8, y + 4);
+  }
+
+  // Оси
+  ctxI.strokeStyle = '#2a3550';
+  ctxI.beginPath();
+  ctxI.moveTo(padL, padT);
+  ctxI.lineTo(padL, HI - padB);
+  ctxI.lineTo(WI - padR, HI - padB);
+  ctxI.stroke();
+
+  // Засечки и подписи X
+  ctxI.textAlign = 'center';
+  ctxI.fillStyle = '#7a89a8';
+  for (let t = 0; t <= tMax + 1e-9; t += stepT) {
+    const x = xToPx(t, WI);
+    ctxI.strokeStyle = '#2a3550';
+    ctxI.beginPath();
+    ctxI.moveTo(x, HI - padB);
+    ctxI.lineTo(x, HI - padB + 4);
+    ctxI.stroke();
+    ctxI.fillText(t, x, HI - padB + 16);
+  }
+
+  // Подписи осей
+  ctxI.textAlign = 'left';
+  ctxI.fillStyle = '#7a89a8';
+  ctxI.fillText('I (мкА/см²)', padL - 42, padT - 2);
+  ctxI.textAlign = 'right';
+  ctxI.fillText('t (мс)', WI - padR, HI - 4);
+
+  // Кривая I
+  if (history.length > 1) {
+    ctxI.strokeStyle = '#ffb74d';
+    ctxI.lineWidth = 2;
+    ctxI.lineJoin = 'round';
+    ctxI.beginPath();
+    const t0 = simTime - tMax;
+    let started = false;
+    for (let i = 0; i < history.length; i++) {
+      const p = history[i];
+      if (p.t < t0) continue;
+      const x = xToPx(p.t - t0, WI);
+      const y = iToPy(p.I, HI);
+      if (!started) { ctxI.moveTo(x, y); started = true; }
+      else ctxI.lineTo(x, y);
+    }
+    ctxI.stroke();
   }
 }
 
-// ===== Главный цикл =====
+// ===== Главный цикл (равномерный) =====
+const stepsPerMsReal = TIME_SCALE / dt / 1000;
+let accumMs = 0;
+let lastRealTime = performance.now();
+
 function loop(now) {
-  const realDt = Math.min((now - lastRealTime) / 1000, 0.1);
+  const realDtMs = Math.min(now - lastRealTime, 100);
   lastRealTime = now;
+  accumMs += realDtMs;
 
-  // Сколько мс модельного времени надо пройти за этот кадр
-  const modelMs = realDt * 1000 * TIME_SCALE;
-  let steps = Math.floor(modelMs / dt);
-
-  // Сглаживание: если steps получился 0 — накапливаем остаток,
-  // чтобы движение было равномерным, а не дёргалось.
-  // Просто добавляем хотя бы один шаг раз в несколько кадров при необходимости.
-  if (steps < 1) {
-    // накапливаем дробную часть через глобальный счётчик
-    pendingSteps += modelMs / dt;
-    steps = Math.floor(pendingSteps);
-    pendingSteps -= steps;
-  } else {
-    pendingSteps = 0;
-  }
-
-  // Защита от зависания при переключении вкладок
+  let steps = Math.floor(accumMs * stepsPerMsReal);
+  accumMs -= steps * (1 / stepsPerMsReal);
+  if (steps < 0) steps = 0;
   steps = Math.min(steps, 500);
 
+  let lastI = 0;
   for (let i = 0; i < steps; i++) {
-    step();
+    lastI = step();
     simTime += dt;
-    history.push({ t: simTime, V: V });
+    history.push({ t: simTime, V: V, I: lastI });
   }
 
-  // Обрезаем историю
   const cutoff = simTime - tMax * 1.5;
   while (history.length && history[0].t < cutoff) history.shift();
 
-  // Readout
   vNowEl.textContent = V.toFixed(1);
+  iNowEl.textContent = (isCurrentOn ? parseFloat(ampSlider.value) : 0).toFixed(1);
   tNowEl.textContent = simTime.toFixed(0);
 
   draw();
   requestAnimationFrame(loop);
 }
 
-let pendingSteps = 0;
 requestAnimationFrame(loop);
 </script>
 
