@@ -96,29 +96,48 @@
   }
   h1 { font-size: 20px; font-weight: 500; margin: 0; text-align: center; }
 
+  /* === Нейрон === */
   .neuron-wrap {
-    padding: 8px 14px;
+    padding: 12px;
     background: var(--panel-bg);
     border: 1px solid var(--border);
     border-radius: 12px;
     transition: box-shadow 0.15s, border-color 0.15s;
-    width: fit-content;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 424px;   /* 400 + 12*2 */
+    height: 224px;  /* 200 + 12*2 */
+    margin: 0 auto;
   }
   .neuron-wrap.firing {
     box-shadow: 0 0 24px rgba(127, 212, 255, 0.55);
     border-color: var(--accent);
   }
-  .neuron-svg .neuron-body { fill: #5a6e9e; stroke: #a8c0e8; stroke-width: 1.5; transition: fill 0.15s, stroke 0.15s; }
-  .neuron-svg .neuron-axon { stroke: #a8c0e8; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.15s; }
-  .neuron-svg .neuron-dendrite { stroke: #a8c0e8; fill: none; stroke-linecap: round; transition: stroke 0.15s; }
-  .neuron-svg .nucleus { fill: #7fd4ff; transition: fill 0.15s; }
-  .neuron-svg .synapse { fill: #a8c0e8; transition: fill 0.15s; }
-  .neuron-wrap.firing .neuron-body { fill: #7fd4ff; stroke: #ffffff; filter: drop-shadow(0 0 12px #7fd4ff); }
-  .neuron-wrap.firing .neuron-axon { stroke: #ffffff; filter: drop-shadow(0 0 10px #7fd4ff); }
-  .neuron-wrap.firing .neuron-dendrite { stroke: #ffffff; }
-  .neuron-wrap.firing .nucleus { fill: #ffffff; }
-  .neuron-wrap.firing .synapse { fill: #ffffff; filter: drop-shadow(0 0 8px #7fd4ff); }
 
+  .neuron-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+    transition: filter 0.15s;
+  }
+
+  /* Цвет путей (potrace делает всё чёрным, перекрашиваем) */
+  .neuron-svg path {
+    fill: #5a6e9e;
+    transition: fill 0.15s;
+  }
+
+  /* Вспышка */
+  .neuron-wrap.firing .neuron-svg {
+    filter: drop-shadow(0 0 10px #7fd4ff) drop-shadow(0 0 22px #7fd4ff);
+  }
+  .neuron-wrap.firing .neuron-svg path {
+    fill: #7fd4ff;
+  }
+
+  /* === Графики === */
   canvas {
     background: #0a0e17;
     border: 1px solid var(--border);
@@ -199,7 +218,6 @@
   }
   .info-panel .feature strong { color: var(--accent); display: block; margin-bottom: 4px; }
   .info-panel p { margin: 8px 0; color: #c0cce0; }
-
 </style>
 </head>
 <body>
@@ -219,19 +237,10 @@
     <h1 id="modelTitle">Модель LIF</h1>
 
     <div class="neuron-wrap" id="neuronWrap">
-      <svg class="neuron-svg" width="400" height="160" viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg">
-        <?xml version="1.0" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
- "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
-<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
- width="1280.000000pt" height="640.000000pt" viewBox="0 0 1280.000000 640.000000"
- preserveAspectRatio="xMidYMid meet">
-<metadata>
-Created by potrace 1.15, written by Peter Selinger 2001-2017
-</metadata>
-<g transform="translate(0.000000,640.000000) scale(0.100000,-0.100000)"
-fill="#000000" stroke="none">
-<path d="M12110 6111 c-64 -35 -79 -59 -86 -141 -4 -44 -16 -96 -29 -127 -43
+      <!-- ВАШ SVG (potrace) -->
+      <svg class="neuron-svg" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+        <g transform="translate(0.000000,640.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
+          <path d="M12110 6111 c-64 -35 -79 -59 -86 -141 -4 -44 -16 -96 -29 -127 -43
 -96 -248 -288 -460 -430 -177 -119 -632 -376 -648 -366 -13 8 -1 233 18 322
 38 180 112 303 216 357 16 8 80 22 141 30 109 15 168 34 168 54 0 22 -54 42
 -142 52 -142 16 -156 22 -184 92 -28 69 -49 96 -76 96 -23 0 -26 -7 -37 -109
@@ -334,9 +343,7 @@ l34 -28 -41 -17 c-146 -58 -512 -71 -616 -22 -53 25 -129 103 -159 162 -73
 274 741 381 173 61 247 100 243 128 -5 32 -51 31 -159 -3 -111 -36 -179 -48
 -179 -33 0 6 41 47 90 93 98 89 113 116 87 162 -22 38 -22 47 10 112 21 43 25
 60 17 73 -16 25 -90 26 -134 3z"/>
-</g>
-</svg>
-
+        </g>
       </svg>
     </div>
 
@@ -359,6 +366,7 @@ l34 -28 -41 -17 c-146 -58 -512 -71 -616 -22 -53 25 -129 103 -159 162 -73
 </div>
 
 <script>
+// ===== ДАННЫЕ МОДЕЛЕЙ =====
 const MODELS = {
   lif: {
     title: 'Модель LIF (Leaky Integrate-and-Fire)',
@@ -402,12 +410,10 @@ const MODELS = {
   ml: {
     title: 'Модель Морриса-Лекара',
     initial: { V: -60, w: 0.1 },
-    // Исправленные параметры (классический type II набор)
     params: { C: 20, gCa: 4.4, gK: 8, gL: 2, VCa: 120, VK: -84, VL: -60, V1: -1.2, V2: 18, V3: 2, V4: 30, phi: 0.04 },
     ranges: { amp: { min: 0, max: 200, step: 5, val: 50 }, V: [-80, 40] },
     info: {
       paper: 'Morris, C., & Lecar, H. (1981). Voltage oscillations in the barnacle giant muscle fiber.',
-      // Исправленные уравнения: tau_w = 1 / cosh(...), а не просто cosh
       equations: String.raw`C \frac{dV}{dt} = I - g_{Ca} m_\infty(V)(V - V_{Ca}) - g_K w (V - V_K) - g_L (V - V_L) \\
       \frac{dw}{dt} = \phi \, \frac{w_\infty(V) - w}{\tau_w(V)} \\
       m_\infty(V) = \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_1}{V_2}\right)\right] \\
@@ -419,12 +425,10 @@ const MODELS = {
   fh: {
     title: 'Модель ФитцХью-Нагумо',
     initial: { V: -1, w: 0 },
-    // Исправленные параметры: a=0.7, b=0.8, tau=12.5 — классический набор
     params: { a: 0.7, b: 0.8, tau: 12.5 },
     ranges: { amp: { min: -1, max: 2, step: 0.01, val: 0.5 }, V: [-3, 3] },
     info: {
       paper: 'FitzHugh, R. (1961). Impulses and physiological states in theoretical models of nerve membrane.',
-      // Исправленные уравнения: классическая форма с кубом
       equations: String.raw`\frac{dV}{dt} = V - \frac{V^3}{3} - w + I \\
       \frac{dw}{dt} = \frac{V + a - b w}{\tau}`,
       feature: 'Качественная модель (редукция HH). Простая 2D система, которая демонстрирует возбудимость и автоколебания (предельный цикл).'
@@ -433,12 +437,10 @@ const MODELS = {
   hr: {
     title: 'Модель Хиндмарша-Роуза',
     initial: { x: -1.5, y: -8, z: 2 },
-    // Исправленные параметры: r = 0.006, s = 4, x_R = -1.6 — классический набор
     params: { a: 1, b: 3, c: 1, d: 5, r: 0.006, s: 4, x_R: -1.6 },
     ranges: { amp: { min: 0, max: 5, step: 0.1, val: 2.5 }, V: [-3, 4] },
     info: {
       paper: 'Hindmarsh, J. L., & Rose, R. M. (1984). A model of neuronal bursting using three coupled first order differential equations.',
-      // Исправленные уравнения: c - d x^2 - y, а не c - d*x^2 (скобки не нужны, но форма верная)
       equations: String.raw`\frac{dx}{dt} = y - a x^3 + b x^2 - z + I \\
       \frac{dy}{dt} = c - d x^2 - y \\
       \frac{dz}{dt} = r \left[ s(x - x_R) - z \right]`,
@@ -451,6 +453,7 @@ let currentModelKey = 'lif';
 let currentState = {};
 let currentParams = {};
 
+// ===== DOM =====
 const modelTitle = document.getElementById('modelTitle');
 const infoPanel = document.getElementById('infoPanel');
 const ampSlider = document.getElementById('amp');
@@ -461,6 +464,7 @@ const iNowEl = document.getElementById('iNow');
 const tNowEl = document.getElementById('tNow');
 const neuronWrap = document.getElementById('neuronWrap');
 
+// ===== ГРАФИКИ =====
 const canvasV = document.getElementById('plotV');
 const canvasI = document.getElementById('plotI');
 const ctxV = canvasV.getContext('2d');
@@ -477,6 +481,7 @@ let dt = 0.01;
 const TIME_SCALE = 8;
 let tMax = 100;
 
+// ===== МОДЕЛИ =====
 function stepModel(Iext) {
   const s = { ...currentState };
   const p = currentParams;
@@ -484,119 +489,70 @@ function stepModel(Iext) {
 
   switch(currentModelKey) {
     case 'lif': {
-      if (s.refractory > 0) {
-        s.refractory -= dt;
-        s.V = p.V_reset;
-      } else {
+      if (s.refractory > 0) { s.refractory -= dt; s.V = p.V_reset; }
+      else {
         const dV = (-(s.V - p.V_reset) + p.R * Iext) / p.tau_m;
         s.V += dV * dt;
-        if (s.V >= p.V_th) {
-          s.V = p.V_reset;
-          s.refractory = 2;
-          didSpike = true;
-        }
+        if (s.V >= p.V_th) { s.V = p.V_reset; s.refractory = 2; didSpike = true; }
       }
-      currentState.V = s.V; currentState.refractory = s.refractory;
-      return didSpike;
+      currentState.V = s.V; currentState.refractory = s.refractory; return didSpike;
     }
     case 'hh': {
-      const alphaM = (v) => 0.1 * (v + 40) / (1 - Math.exp(-(v + 40) / 10) || 1e-9);
-      const betaM  = (v) => 4.0 * Math.exp(-(v + 65) / 18);
-      const alphaH = (v) => 0.07 * Math.exp(-(v + 65) / 20);
-      const betaH  = (v) => 1.0 / (1 + Math.exp(-(v + 35) / 10));
-      const alphaN = (v) => 0.01 * (v + 55) / (1 - Math.exp(-(v + 55) / 10) || 1e-9);
-      const betaN  = (v) => 0.125 * Math.exp(-(v + 65) / 80);
-
-      const INa = p.gNa * s.m**3 * s.h * (s.V - p.ENa);
-      const IK  = p.gK * s.n**4 * (s.V - p.EK);
-      const IL  = p.gL * (s.V - p.EL);
+      const aM = v => 0.1*(v+40)/(1-Math.exp(-(v+40)/10)||1e-9), bM = v => 4*Math.exp(-(v+65)/18);
+      const aH = v => 0.07*Math.exp(-(v+65)/20), bH = v => 1/(1+Math.exp(-(v+35)/10));
+      const aN = v => 0.01*(v+55)/(1-Math.exp(-(v+55)/10)||1e-9), bN = v => 0.125*Math.exp(-(v+65)/80);
+      const INa = p.gNa * s.m**3 * s.h * (s.V - p.ENa), IK = p.gK * s.n**4 * (s.V - p.EK), IL = p.gL * (s.V - p.EL);
       const dV = (Iext - INa - IK - IL) / p.Cm;
-      
-      const dm = alphaM(s.V)*(1-s.m) - betaM(s.V)*s.m;
-      const dh = alphaH(s.V)*(1-s.h) - betaH(s.V)*s.h;
-      const dn = alphaN(s.V)*(1-s.n) - betaN(s.V)*s.n;
-      
+      const dm = aM(s.V)*(1-s.m) - bM(s.V)*s.m, dh = aH(s.V)*(1-s.h) - bH(s.V)*s.h, dn = aN(s.V)*(1-s.n) - bN(s.V)*s.n;
       if (s.V < -55 && s.V + dV*dt >= -55) didSpike = true;
       s.V += dV * dt; s.m += dm * dt; s.h += dh * dt; s.n += dn * dt;
-      currentState.V = s.V; currentState.m = s.m; currentState.h = s.h; currentState.n = s.n;
-      return didSpike;
+      currentState.V = s.V; currentState.m = s.m; currentState.h = s.h; currentState.n = s.n; return didSpike;
     }
     case 'izh': {
-      const dv = 0.04 * s.V**2 + 5 * s.V + 140 - s.u + Iext;
-      const du = p.a * (p.b * s.V - s.u);
-      s.V += dv * dt; s.u += du * dt;
-      if (s.V >= 30) {
-        s.V = p.c; s.u += p.d; didSpike = true;
-      }
-      currentState.V = s.V; currentState.u = s.u;
-      return didSpike;
+      const dv = 0.04*s.V**2 + 5*s.V + 140 - s.u + Iext, du = p.a*(p.b*s.V - s.u);
+      s.V += dv*dt; s.u += du*dt;
+      if (s.V >= 30) { s.V = p.c; s.u += p.d; didSpike = true; }
+      currentState.V = s.V; currentState.u = s.u; return didSpike;
     }
     case 'ml': {
-      const m_inf = 0.5 * (1 + Math.tanh((s.V - p.V1) / p.V2));
-      const w_inf = 0.5 * (1 + Math.tanh((s.V - p.V3) / p.V4));
-      const tau_w = 1 / Math.cosh((s.V - p.V3) / (2 * p.V4));
-      
-      const ICa = p.gCa * m_inf * (s.V - p.VCa);
-      const IK  = p.gK * s.w * (s.V - p.VK);
-      const IL  = p.gL * (s.V - p.VL);
-      const dV = (Iext - ICa - IK - IL) / p.C;
-      const dw = p.phi * (w_inf - s.w) / tau_w;
-      
+      const m_inf = 0.5*(1+Math.tanh((s.V-p.V1)/p.V2)), w_inf = 0.5*(1+Math.tanh((s.V-p.V3)/p.V4)), tau_w = 1/Math.cosh((s.V-p.V3)/(2*p.V4));
+      const ICa = p.gCa*m_inf*(s.V-p.VCa), IK = p.gK*s.w*(s.V-p.VK), IL = p.gL*(s.V-p.VL);
+      const dV = (Iext-ICa-IK-IL)/p.C, dw = p.phi*(w_inf-s.w)/tau_w;
       if (s.V < -20 && s.V + dV*dt >= -20) didSpike = true;
-      s.V += dV * dt; s.w += dw * dt;
-      currentState.V = s.V; currentState.w = s.w;
-      return didSpike;
+      s.V += dV*dt; s.w += dw*dt;
+      currentState.V = s.V; currentState.w = s.w; return didSpike;
     }
     case 'fh': {
-      const dV = s.V - s.V**3 / 3 - s.w + Iext;
-      const dw = (s.V + p.a - p.b * s.w) / p.tau;
+      const dV = s.V - s.V**3/3 - s.w + Iext, dw = (s.V + p.a - p.b*s.w)/p.tau;
       if (s.V < 0 && s.V + dV*dt >= 0) didSpike = true;
-      s.V += dV * dt; s.w += dw * dt;
-      currentState.V = s.V; currentState.w = s.w;
-      return didSpike;
+      s.V += dV*dt; s.w += dw*dt;
+      currentState.V = s.V; currentState.w = s.w; return didSpike;
     }
     case 'hr': {
-      const dx = s.y - p.a * s.x**3 + p.b * s.x**2 - s.z + Iext;
-      const dy = p.c - p.d * s.x**2 - s.y;
-      const dz = p.r * (p.s * (s.x - p.x_R) - s.z);
+      const dx = s.y - p.a*s.x**3 + p.b*s.x**2 - s.z + Iext, dy = p.c - p.d*s.x**2 - s.y, dz = p.r*(p.s*(s.x-p.x_R)-s.z);
       if (s.x < 0 && s.x + dx*dt >= 0) didSpike = true;
-      s.x += dx * dt; s.y += dy * dt; s.z += dz * dt;
-      currentState.x = s.x; currentState.y = s.y; currentState.z = s.z;
-      return didSpike;
+      s.x += dx*dt; s.y += dy*dt; s.z += dz*dt;
+      currentState.x = s.x; currentState.y = s.y; currentState.z = s.z; return didSpike;
     }
   }
   return false;
 }
 
-function getDisplayV() {
-  if (currentModelKey === 'hr') return currentState.x;
-  return currentState.V;
-}
+function getDisplayV() { return currentModelKey === 'hr' ? currentState.x : currentState.V; }
 
 function updateUIForModel() {
   const m = MODELS[currentModelKey];
   modelTitle.textContent = m.title;
-  
   infoPanel.innerHTML = `
     <h3>${m.title}</h3>
     <div class="paper-ref">📄 ${m.info.paper}</div>
     <p><strong>Уравнения:</strong></p>
     <div class="equations">$$${m.info.equations}$$</div>
-    <div class="feature">
-      <strong>Отличительная особенность:</strong>
-      <p>${m.info.feature}</p>
-    </div>
+    <div class="feature"><strong>Отличительная особенность:</strong><p>${m.info.feature}</p></div>
   `;
-  
-  if (window.MathJax && window.MathJax.typesetPromise) {
-    MathJax.typesetPromise([infoPanel]);
-  }
-
+  if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise([infoPanel]);
   const r = m.ranges.amp;
-  ampSlider.min = r.min;
-  ampSlider.max = r.max;
-  ampSlider.step = r.step;
-  ampSlider.value = r.val;
+  ampSlider.min = r.min; ampSlider.max = r.max; ampSlider.step = r.step; ampSlider.value = r.val;
   ampVal.textContent = r.val;
 }
 
@@ -605,59 +561,11 @@ function switchModel(key) {
   const m = MODELS[key];
   currentState = { ...m.initial };
   currentParams = { ...m.params };
-  
-  history = [];
-  simTime = 0;
-  flashUntil = 0;
-  
+  history = []; simTime = 0; flashUntil = 0;
   updateUIForModel();
 }
 
-(function buildNeuron() {
-  const gDen = document.getElementById('dendrites');
-  const gAxon = document.getElementById('axon');
-  if (!gDen || !gAxon) return;
-  const SVG_NS = 'http://www.w3.org/2000/svg';
-  const somaX = 100, somaY = 80, somaRx = 30, somaRy = 24;
-  let seed = 42;
-  function rand() { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }
-  function randRange(a, b) { return a + (b - a) * rand(); }
-  function drawBranch(g, x, y, ex, ey, cx1, cy1, cx2, cy2, width, cls) {
-    const path = document.createElementNS(SVG_NS, 'path');
-    path.setAttribute('class', cls); path.setAttribute('stroke-width', width.toFixed(2));
-    path.setAttribute('d', `M ${x.toFixed(1)} ${y.toFixed(1)} C ${cx1.toFixed(1)} ${cy1.toFixed(1)}, ${cx2.toFixed(1)} ${cy2.toFixed(1)}, ${ex.toFixed(1)} ${ey.toFixed(1)}`);
-    g.appendChild(path);
-  }
-  const denAngles = [-Math.PI*0.85, -Math.PI*0.55, -Math.PI*0.15, Math.PI*0.15, Math.PI*0.55, Math.PI*0.85];
-  function drawDendriteTree(x, y, angle, len, width, depth) {
-    if (depth <= 0) return;
-    const endAngle = angle + randRange(-0.2, 0.2);
-    const ex = x + Math.cos(endAngle) * len; const ey = y + Math.sin(endAngle) * len;
-    drawBranch(gDen, x, y, ex, ey, x+Math.cos(angle)*len*0.4, y+Math.sin(angle)*len*0.4, ex-Math.cos(endAngle)*len*0.2, ey-Math.sin(endAngle)*len*0.2, width, 'neuron-dendrite');
-    for (let i = 0; i < (depth>1?2:0); i++) drawDendriteTree(ex, ey, endAngle + randRange(0.3,0.6)*(i===0?-1:1), len*randRange(0.6,0.8), width*0.7, depth-1);
-  }
-  denAngles.forEach(a => drawDendriteTree(somaX+Math.cos(a)*somaRx*0.8, somaY+Math.sin(a)*somaRy*0.8, a, 22, 2.0, 3));
-  
-  const aX1 = somaX + somaRx*0.9, aY1 = somaY, aX2 = 220, aY2 = somaY + 5, aX3 = 290, aY3 = somaY;
-  drawBranch(gAxon, aX1, aY1, aX2, aY2, aX1+30, aY1+2, aX2-20, aY2-2, 4.0, 'neuron-axon');
-  drawBranch(gAxon, aX2, aY2, aX3, aY3, aX2+20, aY2+2, aX3-20, aY3-2, 3.5, 'neuron-axon');
-  function drawAxonTerminal(x, y, angle, len, width, depth) {
-    if (depth <= 0) return;
-    const endAngle = angle + randRange(-0.25, 0.25);
-    const ex = x + Math.cos(endAngle) * len; const ey = y + Math.sin(endAngle) * len;
-    drawBranch(gAxon, x, y, ex, ey, x+Math.cos(angle)*len*0.5, y+Math.sin(angle)*len*0.5, ex-Math.cos(endAngle)*len*0.2, ey-Math.sin(endAngle)*len*0.2, width, 'neuron-axon');
-    if (depth === 1) {
-      const c = document.createElementNS(SVG_NS, 'circle');
-      c.setAttribute('class', 'synapse'); c.setAttribute('cx', ex.toFixed(1)); c.setAttribute('cy', ey.toFixed(1)); c.setAttribute('r', '2.5');
-      gAxon.appendChild(c);
-    }
-    for (let i = 0; i < (depth>1?2:0); i++) drawAxonTerminal(ex, ey, endAngle + randRange(0.2,0.45)*(i===0?-1:1), len*randRange(0.65,0.8), width*0.7, depth-1);
-  }
-  drawAxonTerminal(aX3, aY3, -0.15, 28, 2.5, 3);
-  drawAxonTerminal(aX3, aY3, 0.0, 32, 2.5, 3);
-  drawAxonTerminal(aX3, aY3, 0.15, 28, 2.5, 3);
-})();
-
+// ===== ГРАФИКИ =====
 function niceStep(range, target) {
   const raw = range / target;
   const steps = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000];
@@ -666,24 +574,19 @@ function niceStep(range, target) {
 
 function draw() {
   ctxV.clearRect(0, 0, WV, HV); ctxI.clearRect(0, 0, WI, HI);
-  
   const m = MODELS[currentModelKey];
-  const Vmin = m.ranges.V[0], Vmax = m.ranges.V[1];
-  const Imax = m.ranges.amp.max;
-
+  const Vmin = m.ranges.V[0], Vmax = m.ranges.V[1], Imax = m.ranges.amp.max;
   const vToPy = (v, H) => padT + (1 - (v - Vmin) / (Vmax - Vmin)) * (H - padT - padB);
   const xToPx = (t, W) => padL + (t / tMax) * (W - padL - padR);
 
-  ctxV.font = '12px system-ui';
-  ctxV.textAlign = 'right';
+  ctxV.font = '12px system-ui'; ctxV.textAlign = 'right';
   const stepV = niceStep(Vmax - Vmin, 7);
   for (let v = Vmin; v <= Vmax + 1e-9; v += stepV) {
     const y = vToPy(v, HV);
     ctxV.strokeStyle = '#1a2136'; ctxV.beginPath(); ctxV.moveTo(padL, y); ctxV.lineTo(WV - padR, y); ctxV.stroke();
-    ctxV.fillStyle = '#7a89a8'; ctxV.fillText(v.toFixed(v < 1 && v > -1 ? 2 : 0), padL - 8, y + 4);
+    ctxV.fillStyle = '#7a89a8'; ctxV.fillText(v.toFixed(v<1&&v>-1?2:0), padL - 8, y + 4);
   }
-  ctxV.strokeStyle = '#2a3550';
-  ctxV.beginPath(); ctxV.moveTo(padL, padT); ctxV.lineTo(padL, HV - padB); ctxV.lineTo(WV - padR, HV - padB); ctxV.stroke();
+  ctxV.strokeStyle = '#2a3550'; ctxV.beginPath(); ctxV.moveTo(padL, padT); ctxV.lineTo(padL, HV - padB); ctxV.lineTo(WV - padR, HV - padB); ctxV.stroke();
 
   ctxV.textAlign = 'center'; ctxV.fillStyle = '#7a89a8';
   const stepT = niceStep(tMax, 7);
@@ -695,13 +598,10 @@ function draw() {
 
   if (history.length > 1) {
     ctxV.strokeStyle = '#7fd4ff'; ctxV.lineWidth = 2; ctxV.lineJoin = 'round'; ctxV.beginPath();
-    const t0 = simTime - tMax;
-    let started = false;
+    const t0 = simTime - tMax; let started = false;
     for (let i = 0; i < history.length; i++) {
-      const p = history[i];
-      if (p.t < t0) continue;
-      const x = xToPx(p.t - t0, WV);
-      const y = vToPy(p.V, HV);
+      const p = history[i]; if (p.t < t0) continue;
+      const x = xToPx(p.t - t0, WV), y = vToPy(p.V, HV);
       if (!started) { ctxV.moveTo(x, y); started = true; } else ctxV.lineTo(x, y);
     }
     ctxV.stroke();
@@ -712,10 +612,9 @@ function draw() {
   for (let i = 0; i <= Imax + 1e-9; i += stepI) {
     const y = padT + (1 - i / Imax) * (HI - padT - padB);
     ctxI.strokeStyle = '#1a2136'; ctxI.beginPath(); ctxI.moveTo(padL, y); ctxI.lineTo(WI - padR, y); ctxI.stroke();
-    ctxI.fillStyle = '#7a89a8'; ctxI.fillText(i.toFixed(i < 1 && i > 0 ? 1 : 0), padL - 8, y + 4);
+    ctxI.fillStyle = '#7a89a8'; ctxI.fillText(i.toFixed(i<1&&i>0?1:0), padL - 8, y + 4);
   }
-  ctxI.strokeStyle = '#2a3550';
-  ctxI.beginPath(); ctxI.moveTo(padL, padT); ctxI.lineTo(padL, HI - padB); ctxI.lineTo(WI - padR, HI - padB); ctxI.stroke();
+  ctxI.strokeStyle = '#2a3550'; ctxI.beginPath(); ctxI.moveTo(padL, padT); ctxI.lineTo(padL, HI - padB); ctxI.lineTo(WI - padR, HI - padB); ctxI.stroke();
 
   ctxI.textAlign = 'center'; ctxI.fillStyle = '#7a89a8';
   for (let t = 0; t <= tMax + 1e-9; t += stepT) {
@@ -727,19 +626,17 @@ function draw() {
 
   if (history.length > 1) {
     ctxI.strokeStyle = '#ffb74d'; ctxI.lineWidth = 2; ctxI.lineJoin = 'round'; ctxI.beginPath();
-    const t0 = simTime - tMax;
-    let started = false;
+    const t0 = simTime - tMax; let started = false;
     for (let i = 0; i < history.length; i++) {
-      const p = history[i];
-      if (p.t < t0) continue;
-      const x = xToPx(p.t - t0, WI);
-      const y = padT + (1 - p.I / Imax) * (HI - padT - padB);
+      const p = history[i]; if (p.t < t0) continue;
+      const x = xToPx(p.t - t0, WI), y = padT + (1 - p.I / Imax) * (HI - padT - padB);
       if (!started) { ctxI.moveTo(x, y); started = true; } else ctxI.lineTo(x, y);
     }
     ctxI.stroke();
   }
 }
 
+// ===== ГЛАВНЫЙ ЦИКЛ =====
 const stepsPerMsReal = TIME_SCALE / dt / 1000;
 let accumMs = 0;
 let lastRealTime = performance.now();
@@ -779,6 +676,7 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
+// ===== СОБЫТИЯ =====
 document.querySelectorAll('.model-btn').forEach(btn => {
   btn.addEventListener('click', (e) => {
     document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
