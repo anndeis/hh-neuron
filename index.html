@@ -209,14 +209,25 @@
   .info-panel .equations mjx-container {
     color: #b8e8ff !important;
   }
-  .info-panel .feature {
-    margin-top: 16px;
+  .info-panel .info-section {
+    margin-top: 14px;
     padding: 12px;
-    background: rgba(127, 212, 255, 0.08);
+    background: rgba(127, 212, 255, 0.06);
     border-radius: 6px;
-    border: 1px solid rgba(127, 212, 255, 0.2);
+    border: 1px solid rgba(127, 212, 255, 0.16);
   }
-  .info-panel .feature strong { color: var(--accent); display: block; margin-bottom: 4px; }
+  .info-panel .info-section h4 {
+    color: var(--accent);
+    margin: 0 0 7px;
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  .info-panel .info-section p { margin: 0; color: #c0cce0; }
+  .info-panel .info-section ul { margin: 0; padding-left: 18px; color: #c0cce0; }
+  .info-panel .info-section li { margin: 0 0 9px; }
+  .info-panel .info-section li:last-child { margin-bottom: 0; }
+  .info-panel .limitations { background: rgba(255, 190, 100, 0.045); border-color: rgba(255, 190, 100, 0.16); }
+  .info-panel .limitations h4 { color: #ffd08a; }
   .info-panel p { margin: 8px 0; color: #c0cce0; }
 </style>
 </head>
@@ -358,7 +369,7 @@ l34 -28 -41 -17 c-146 -58 -512 -71 -616 -22 -53 25 -129 103 -159 162 -73
         <input type="range" id="amp" min="0" max="100" step="1" value="10">
         <span class="value" id="ampVal">10</span>
       </div>
-      <button id="currentBtn">ТОК</button>
+      <button id="currentBtn" aria-pressed="false">ТОК: ВЫКЛ</button>
     </div>
   </div>
 
@@ -373,12 +384,18 @@ const MODELS = {
     initial: { V: -65, refractory: 0 },
     params: { V_rest: -65, V_th: -50, V_reset: -65, tau_m: 10, tau_refract: 2, R: 10 },
     stateLabel: 'V', stateUnit: 'мВ', currentUnit: 'нА', timeUnit: 'мс',
+    thresholdLine: { value: -50, label: 'Vₜₕ = −50 мВ' },
     ranges: { amp: { min: 0, max: 30, step: 1, val: 2 }, V: [-80, -40] },
     info: {
       paper: 'Lapicque, L. (1907). Recherches quantitatives sur l\'excitation électrique des nerfs traitée comme une polarisation.',
-      equations: String.raw`\tau_m \frac{dV}{dt} = -(V - V_{rest}) + R I(t) \\
-      \text{Если } V \ge V_{th}: \quad V \leftarrow V_{reset}, \quad V=V_{reset} \text{ в течение } \tau_{refract}`,
-      feature: 'Упрощённая RC-модель с порогом, сбросом и рефрактерностью. Форма потенциала действия не моделируется; хорошо подходит для больших сетей. Порогово-сбросная схема — современная формализация integrate-and-fire, а не дословное уравнение всей модели у Лапика.'
+      equations: String.raw`\left\{\begin{aligned}\tau_m \frac{dV}{dt} &= -(V - V_{rest}) + R I(t) \\ \text{при } V \ge V_{th}:\quad &V \leftarrow V_{reset} \\ \text{рефрактерный период:}\quad &V=V_{reset} \text{ в течение } \tau_{refract}\end{aligned}\right.`,
+      concept: "Мембрану представляют как конденсатор с утечкой: напряжение постепенно приближается к уровню покоя под действием тока. Когда достигается порог, модель регистрирует спайк и сбрасывает напряжение. Главное достоинство — простота и высокая скорость, поэтому LIF удобна для больших сетей и изучения времени спайков.",
+      limitations: "Потенциал действия не рассчитывается как реальная форма кривой: спайк заменён пороговым событием. Нет отдельных ионных каналов, адаптации и самостоятельного механизма пачечной активности. Результат зависит от выбранных порога, сброса и рефрактерного периода.",
+      regimes: [
+        "Подпороговый ответ: включи ток и поставь амплитуду ниже примерно 1.5 — напряжение приблизится к стационарному уровню, но спайков не будет.",
+        "Регулярные спайки: включи ток и подними амплитуду выше примерно 1.5. При постоянном токе появится последовательность одинаковых по форме спайков; с ростом тока частота обычно увеличивается.",
+        "Рефрактерная пауза: после каждого спайка напряжение принудительно удерживается на уровне сброса в течение заданного времени. Сложные пачки или адаптацию эта версия LIF не воспроизводит."
+      ]
     }
   },
   hh: {
@@ -389,11 +406,14 @@ const MODELS = {
     ranges: { amp: { min: 0, max: 50, step: 1, val: 10 }, V: [-90, 50] },
     info: {
       paper: 'Hodgkin, A. L., & Huxley, A. F. (1952). A quantitative description of membrane current and its application to conduction and excitation in nerve. DOI: 10.1113/jphysiol.1952.sp004764.',
-      equations: String.raw`C_m \frac{dV}{dt} = I - g_{Na} m^3 h (V - E_{Na}) - g_K n^4 (V - E_K) - g_L (V - E_L) \\
-      \frac{dm}{dt} = \alpha_m(V)(1-m) - \beta_m(V)m \\
-      \frac{dh}{dt} = \alpha_h(V)(1-h) - \beta_h(V)h \\
-      \frac{dn}{dt} = \alpha_n(V)(1-n) - \beta_n(V)n`,
-      feature: 'Биофизическая модель гигантского аксона кальмара: описывает натриевый, калиевый и утечечный токи вместе с кинетикой ворот m, h и n. При исходной параметризации количественно воспроизводит экспериментальные потенциалы действия, но не является универсальной моделью любой клетки.'
+      equations: String.raw`\left\{\begin{aligned}C_m \frac{dV}{dt} &= I - g_{Na} m^3 h (V - E_{Na}) - g_K n^4 (V - E_K) - g_L (V - E_L) \\ \frac{dm}{dt} &= \alpha_m(V)(1-m) - \beta_m(V)m \\ \frac{dh}{dt} &= \alpha_h(V)(1-h) - \beta_h(V)h \\ \frac{dn}{dt} &= \alpha_n(V)(1-n) - \beta_n(V)n\end{aligned}\right.`,
+      concept: "Модель связывает изменение мембранного потенциала с потоками натрия и калия и с током утечки. Переменные m, h и n описывают открывание и инактивацию каналов во времени. Её сильная сторона — биофизическая интерпретируемость: можно изучать, как конкретные ионные токи формируют потенциал действия.",
+      limitations: "Классическая параметризация получена для гигантского аксона кальмара и не переносится автоматически на другие нейроны. Модель сложнее феноменологических моделей, требует подбирать много параметров и сама по себе не описывает синапсы, дендритную морфологию или пластичность.",
+      regimes: [
+        "Покой: оставь ток выключенным — мембранный потенциал остаётся около потенциала покоя.",
+        "Возбуждение и одиночный спайк: включи ток небольшой амплитуды. Если стимул пересекает порог возбудимости, возникнет потенциал действия; при более слабом токе ответ останется подпороговым.",
+        "Повторная генерация спайков: включи ток и постепенно увеличивай амплитуду ползунком. В подходящем диапазоне появится поезд спайков. При очень сильной стимуляции динамика тоже может изменяться, поэтому не стоит считать частоту линейной функцией тока."
+      ]
     }
   },
   izh: {
@@ -401,56 +421,72 @@ const MODELS = {
     initial: { V: -70, u: -14 },
     params: { a: 0.02, b: 0.2, c: -65, d: 2 },
     stateLabel: 'v', stateUnit: 'мВ', currentUnit: 'усл. ед.', timeUnit: 'мс',
+    thresholdLine: { value: 30, label: 'v = 30 мВ' },
     ranges: { amp: { min: 0, max: 20, step: 1, val: 10 }, V: [-90, 40] },
     info: {
       paper: 'Izhikevich, E. M. (2003). Simple model of spiking neurons. IEEE Trans. Neural Networks, 14(6), 1569–1572. DOI: 10.1109/TNN.2003.820440.',
-      equations: String.raw`\frac{dv}{dt} = 0.04v^2 + 5v + 140 - u + I \\
-      \frac{du}{dt} = a(bv - u) \\
-      \text{Если } v \ge 30 \text{ мВ}: \quad v \leftarrow c, \quad u \leftarrow u + d`,
-      feature: 'Компромисс между биологической правдоподобностью HH и вычислительной эффективностью LIF. Воспроизводит 20 типов спайков.'
+      equations: String.raw`\left\{\begin{aligned}\frac{dv}{dt} &= 0.04v^2 + 5v + 140 - u + I \\ \frac{du}{dt} &= a(bv - u) \\ \text{при } v \ge 30\text{ мВ}:\quad &v \leftarrow c,\quad u \leftarrow u+d\end{aligned}\right.`,
+      concept: "Две переменные описывают напряжение и восстановительный процесс. Нелинейная зависимость dv/dt от напряжения позволяет получать спайки, а параметр u задаёт обратную связь, которая меняет форму и частоту разрядов. Модель вычислительно дешёвая, но способна воспроизводить широкий набор качественных типов активности.",
+      limitations: "Это феноменологическая модель: переменные не соответствуют напрямую концентрациям ионных каналов, а форма спайка задана приближённо. Разные режимы требуют разных параметров a, b, c и d; в этом интерфейсе они фиксированы, поэтому доступны не все типы активности, которые модель может воспроизводить в принципе.",
+      regimes: [
+        "Покой: выключи ток и наблюдай, как система остаётся около устойчивого состояния.",
+        "Регулярные спайки: включи ток с текущей настройкой около 10. На графике должны появиться повторяющиеся спайки; увеличение тока обычно меняет частоту и межспайковые интервалы.",
+        "Другие типы разрядов, включая адаптацию, пачки и быстрое чattering-подобное разряжение, возможны при других сочетаниях a, b, c и d. Ползунок тока сам по себе не гарантирует переход к ним — для их демонстрации нужны дополнительные пресеты параметров."
+      ]
     }
   },
   ml: {
     title: 'Модель Морриса-Лекара',
     initial: { V: -60.8553822323, w: 0.014915024954 },
     params: { C: 20, gCa: 4.4, gK: 8, gL: 2, VCa: 120, VK: -84, VL: -60, V1: -1.2, V2: 18, V3: 2, V4: 30, phi: 0.04 },
-    stateLabel: 'V', stateUnit: 'мВ', currentUnit: 'мкА/см²',
+    stateLabel: 'V', stateUnit: 'мВ', currentUnit: 'мкА/см²', timeUnit: 'мс',
     ranges: { amp: { min: 0, max: 200, step: 5, val: 100 }, V: [-80, 60] },
     info: {
       paper: 'Morris, C., & Lecar, H. (1981). Voltage oscillations in the barnacle giant muscle fiber. DOI: 10.1016/S0006-3495(81)84782-0.',
-      equations: String.raw`C \frac{dV}{dt} = I - g_{Ca} m_\infty(V)(V - V_{Ca}) - g_K w (V - V_K) - g_L (V - V_L) \\
-      \frac{dw}{dt} = \phi \, \frac{w_\infty(V) - w}{\tau_w(V)} \\
-      m_\infty(V) = \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_1}{V_2}\right)\right] \\
-      w_\infty(V) = \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_3}{V_4}\right)\right] \\
-      \tau_w(V) = \frac{1}{\cosh\left(\frac{V - V_3}{2V_4}\right)}`,
-      feature: 'Двумерная модель, предложенная для описания электрических колебаний гигантского мышечного волокна усоногого рака. Здесь выбран распространённый набор параметров C=20, gCa=4.4, gK=8, gL=2, V3=2, V4=30, φ=0.04; динамический режим зависит от приложенного тока. Это не исходная модель нейрона коры.'
+      equations: String.raw`\left\{\begin{aligned}C \frac{dV}{dt} &= I - g_{Ca} m_\infty(V)(V - V_{Ca}) - g_K w (V - V_K) - g_L (V - V_L) \\ \frac{dw}{dt} &= \phi \, \frac{w_\infty(V) - w}{\tau_w(V)} \\ m_\infty(V) &= \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_1}{V_2}\right)\right] \\ w_\infty(V) &= \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_3}{V_4}\right)\right] \\ \tau_w(V) &= \frac{1}{\cosh\left(\frac{V - V_3}{2V_4}\right)}\end{aligned}\right.`,
+      concept: "Это сокращённая биофизическая модель: кальциевый ток быстро активируется в зависимости от напряжения, а переменная w описывает более медленную калиевую проводимость. Две переменные уже позволяют исследовать возбудимость и колебания, сохраняя связь с механизмами мембранных токов. Изначально модель описывала гигантское мышечное волокно усоногого рака.",
+      limitations: "В модели оставлены только два динамических состояния, а активация кальциевого тока считается мгновенной. Это упрощение не передаёт всю кинетику реальных каналов и не делает модель специфичной для корковых нейронов. Тип динамики чувствителен к параметрам и к тому, какой вариант модели используется.",
+      regimes: [
+        "Покой: выключи ток — напряжение должно оставаться около стационарного уровня.",
+        "Тоническая активность: включи ток и установи амплитуду около 100. Для выбранных здесь параметров ожидается повторяющаяся спайковая активность.",
+        "Порог перехода: медленно меняй ток от малых к большим значениям и следи, когда покой сменяется колебаниями. Вблизи перехода возможны разные типы начала колебаний; точная картина зависит от параметров, а не только от названия модели."
+      ]
     }
   },
   fh: {
     title: 'Модель ФитцХью-Нагумо',
     initial: { V: -1.1994080352, w: -0.6242600441 },
     params: { a: 0.7, b: 0.8, tau: 12.5 },
-    stateLabel: 'v', stateUnit: 'безразм.', currentUnit: 'безразм.', timeUnit: 'мс',
+    stateLabel: 'v', stateUnit: 'безразм.', currentUnit: 'безразм.', timeUnit: 'усл. ед.',
     ranges: { amp: { min: -1, max: 2, step: 0.01, val: 0.5 }, V: [-3, 3] },
     info: {
       paper: 'FitzHugh, R. (1961). Impulses and physiological states in theoretical models of nerve membrane; Nagumo, Arimoto & Yoshizawa (1962). An active pulse transmission line simulating nerve axon. DOI: 10.1109/JRPROC.1962.288235.',
-      equations: String.raw`\frac{dV}{dt} = V - \frac{V^3}{3} - w + I \\
-      \frac{dw}{dt} = \frac{V + a - b w}{\tau}`,
-      feature: 'Феноменологическая двумерная модель возбудимости и восстановления. Уравнения в интерфейсе — распространённая безразмерная форма FitzHugh–Nagumo; не следует трактовать её как единственную буквальную запись исходной системы ФитцХью 1961 года.'
+      equations: String.raw`\left\{\begin{aligned}\frac{dV}{dt} &= V - \frac{V^3}{3} - w + I \\ \frac{dw}{dt} &= \frac{V + a - b w}{\tau}\end{aligned}\right.`,
+      concept: "Модель сводит динамику возбудимой мембраны к двум процессам: быстрой переменной V и более медленной переменной восстановления w. Кубическая нелинейность создаёт пороговый ответ, а восстановительная переменная помогает системе вернуться к покою. Это наглядная модель для понимания возбудимости без подробного описания ионных каналов.",
+      limitations: "V и w здесь безразмерны и не являются буквальными измерениями мембранного потенциала и конкретного тока. Форма импульса схематична, а ионные механизмы не разделены на отдельные каналы. Данная запись — распространённая безразмерная форма FitzHugh–Nagumo, а не единственная буквальная форма исходной статьи ФитцХью.",
+      regimes: [
+        "Устойчивый покой: выключи ток и посмотри, как система приходит к стационарному состоянию.",
+        "Возбудимый ответ: включи небольшой ток или кратко включи и выключи стимул. Если система пересекает порог, возникает большой импульс, после которого она восстанавливается.",
+        "Автоколебания: для текущих параметров попробуй включить ток около 0.5. На графике ожидаются повторяющиеся колебания; меняя ток, можно увидеть переход между покоем и колебательным режимом. В этой модели спайки не следует интерпретировать как реалистичные потенциалы действия в мВ."
+      ]
     }
   },
   hr: {
     title: 'Модель Хиндмарша-Роуза',
-    initial: { x: -1.60453453, y: -11.87265529, z: -0.01813812 },
-    params: { a: 1, b: 3, c: 1, d: 5, r: 0.001, s: 4, x_R: -1.6 },
+    initial: { x: -1.76627051, y: -14.59855758, z: -0.66508204 },
+    params: { a: 1, b: 2.7, c: 1, d: 5, r: 0.01, s: 4, x_R: -1.6 },
     stateLabel: 'x', stateUnit: 'безразм.', currentUnit: 'безразм.', timeUnit: 'мод. ед.',
-    ranges: { amp: { min: 0, max: 5, step: 0.1, val: 2.5 }, V: [-3, 4] },
+    ranges: { amp: { min: 0, max: 5, step: 0.1, val: 4.0 }, V: [-3, 4] },
     info: {
       paper: 'Hindmarsh, J. L., & Rose, R. M. (1984). A model of neuronal bursting using three coupled first order differential equations. DOI: 10.1098/rspb.1984.0024.',
-      equations: String.raw`\frac{dx}{dt} = y - a x^3 + b x^2 - z + I \\
-      \frac{dy}{dt} = c - d x^2 - y \\
-      \frac{dz}{dt} = r \left[ s(x - x_R) - z \right]`,
-      feature: 'Трёхмерная модель пачечной активности. Использован распространённый набор a=1, b=3, c=1, d=5, r=0.001, s=4, xR=−1.6; при этом наличие и форма пачек зависят от внешнего тока I. Переменные безразмерные, поэтому x не следует подписывать как напряжение в мВ; время показано в модельных единицах.'
+      equations: String.raw`\left\{\begin{aligned}\frac{dx}{dt} &= y - a x^3 + b x^2 - z + I \\ \frac{dy}{dt} &= c - d x^2 - y \\ \frac{dz}{dt} &= r \left[ s(x - x_R) - z \right]\end{aligned}\right.`,
+      concept: "Три переменные описывают быструю активность x, более быструю восстановительную переменную y и медленную переменную z. Медленная обратная связь способна переключать систему между активной фазой со множеством спайков и тихой фазой. Поэтому модель особенно полезна для изучения пачечной активности (bursting) и переходов между режимами.",
+      limitations: "Переменные и время безразмерны: x нельзя напрямую считать мембранным потенциалом в мВ. Модель не описывает отдельные ионные каналы и требует подбора параметров для нужного режима. Наличие пачек не гарантировано при любых параметрах и начальных условиях; при слишком коротком временном окне медленный цикл можно не заметить.",
+      regimes: [
+        "Пачечная активность: оставь параметры как заданы и включи ток со значением 4. Смотри на длинное окно графика: должны быть видны группы быстрых спайков, разделённые тихими интервалами.",
+        "Изменение режима: после наблюдения пачек постепенно меняй ток в диапазоне ползунка 0–5. В зависимости от значения можно перейти к покою или другому типу разрядов; границы переходов не универсальны.",
+        "Если пачки не видны: убедись, что ток включён, подожди несколько циклов и не сокращай окно времени. Пачки отличаются от регулярного спайкинга тем, что частые спайки собраны в группы с заметными паузами между ними."
+      ]
     }
   }
 };
@@ -488,7 +524,7 @@ let simTime = 0;
 let isCurrentOn = false;
 let flashUntil = 0;
 let dt = 0.01;
-const TIME_SCALE = 8;
+const TIME_SCALE = 25;
 let tMax = 100;
 
 // ===== МОДЕЛИ =====
@@ -576,7 +612,18 @@ function updateUIForModel() {
     <div class="paper-ref">📄 ${m.info.paper}</div>
     <p><strong>Уравнения:</strong></p>
     <div class="equations">$$${m.info.equations}$$</div>
-    <div class="feature"><strong>Отличительная особенность:</strong><p>${m.info.feature}</p></div>
+    <section class="info-section">
+      <h4>1. Идея и сильные стороны</h4>
+      <p>${m.info.concept}</p>
+    </section>
+    <section class="info-section limitations">
+      <h4>2. Ограничения</h4>
+      <p>${m.info.limitations}</p>
+    </section>
+    <section class="info-section regimes">
+      <h4>3. Динамические режимы и как их увидеть</h4>
+      <ul>${m.info.regimes.map(item => `<li>${item}</li>`).join('')}</ul>
+    </section>
   `;
   if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise([infoPanel]);
   const r = m.ranges.amp;
@@ -590,6 +637,9 @@ function switchModel(key) {
   currentState = { ...m.initial };
   currentParams = { ...m.params };
   history = []; simTime = 0; flashUntil = 0;
+  tMax = key === 'hr' ? 300 : 100;
+  isCurrentOn = false;
+  updateCurrentButton();
   updateUIForModel();
 }
 
@@ -625,6 +675,18 @@ function draw() {
     ctxV.strokeStyle = '#1a2136'; ctxV.beginPath(); ctxV.moveTo(x, padT); ctxV.lineTo(x, HV - padB); ctxV.stroke();
   }
   ctxV.textAlign = 'left'; ctxV.fillStyle = '#7a89a8'; ctxV.fillText(MODELS[currentModelKey].stateLabel, padL - 40, padT - 2);
+
+  // Draw a reference line only when the model has an explicit threshold/reset condition.
+  if (m.thresholdLine && m.thresholdLine.value >= Vmin && m.thresholdLine.value <= Vmax) {
+    const yThreshold = vToPy(m.thresholdLine.value, HV);
+    ctxV.save();
+    ctxV.strokeStyle = '#ff6b6b'; ctxV.lineWidth = 1.5; ctxV.setLineDash([7, 5]);
+    ctxV.beginPath(); ctxV.moveTo(padL, yThreshold); ctxV.lineTo(WV - padR, yThreshold); ctxV.stroke();
+    ctxV.setLineDash([]);
+    ctxV.fillStyle = '#ff8b8b'; ctxV.font = '12px system-ui'; ctxV.textAlign = 'right';
+    ctxV.fillText(m.thresholdLine.label, WV - padR - 5, Math.max(padT + 12, yThreshold - 5));
+    ctxV.restore();
+  }
 
   if (history.length > 1) {
     ctxV.strokeStyle = '#7fd4ff'; ctxV.lineWidth = 2; ctxV.lineJoin = 'round'; ctxV.beginPath();
@@ -720,9 +782,16 @@ ampSlider.addEventListener('input', () => {
   ampVal.textContent = parseFloat(ampSlider.value).toFixed(2).replace(/\.?0+$/, '');
 });
 
-currentBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); isCurrentOn = true; currentBtn.classList.add('active'); });
-window.addEventListener('pointerup', () => { isCurrentOn = false; currentBtn.classList.remove('active'); });
-window.addEventListener('pointercancel', () => { isCurrentOn = false; currentBtn.classList.remove('active'); });
+function updateCurrentButton() {
+  currentBtn.classList.toggle('active', isCurrentOn);
+  currentBtn.setAttribute('aria-pressed', String(isCurrentOn));
+  currentBtn.textContent = isCurrentOn ? 'ТОК: ВКЛ' : 'ТОК: ВЫКЛ';
+}
+
+currentBtn.addEventListener('click', () => {
+  isCurrentOn = !isCurrentOn;
+  updateCurrentButton();
+});
 
 switchModel('lif');
 requestAnimationFrame(loop);
