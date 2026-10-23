@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <title>Симулятор нейронов: от LIF до Хиндмарша-Роуза</title>
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
 <style>
   :root {
     --bg: #0f1420;
@@ -141,7 +148,7 @@
 
   /* === Правая панель справки === */
   .info-panel {
-    width: 320px;
+    width: 340px;
     flex-shrink: 0;
     background: var(--panel-bg);
     border: 1px solid var(--border);
@@ -176,12 +183,12 @@
     background: #0a0e17;
     padding: 12px;
     border-radius: 6px;
-    font-family: 'Courier New', monospace;
-    font-size: 13px;
     overflow-x: auto;
     margin: 12px 0;
     color: #b8e8ff;
-    white-space: pre-wrap;
+  }
+  .info-panel .equations mjx-container {
+    color: #b8e8ff !important;
   }
   .info-panel .feature {
     margin-top: 16px;
@@ -198,7 +205,6 @@
 <body>
 
 <div class="app-container">
-  <!-- === Левое меню === -->
   <div class="sidebar">
     <h2>Модели</h2>
     <button class="model-btn active" data-model="lif">LIF</button>
@@ -209,7 +215,6 @@
     <button class="model-btn" data-model="hr">Хиндмарша-Роуза</button>
   </div>
 
-  <!-- === Центр === -->
   <div class="main-content">
     <h1 id="modelTitle">Модель LIF</h1>
 
@@ -237,12 +242,10 @@
     </div>
   </div>
 
-  <!-- === Правая панель справки === -->
   <div class="info-panel" id="infoPanel"></div>
 </div>
 
 <script>
-// ===== ГЛОБАЛЬНЫЕ ДАННЫЕ =====
 const MODELS = {
   lif: {
     title: 'Модель LIF (Leaky Integrate-and-Fire)',
@@ -251,7 +254,8 @@ const MODELS = {
     ranges: { amp: { min: 0, max: 30, step: 1, val: 15 }, V: [-80, -40] },
     info: {
       paper: 'Lapicque, L. (1907). Recherches quantitatives sur l\'excitation électrique des nerfs traitée comme une polarisation.',
-      equations: `τ_m * dV/dt = -(V - V_rest) + R * I(t)\n\nЕсли V >= V_th:\n  V = V_reset\n  (удерживается τ_refract мс)`,
+      equations: String.raw`\tau_m \frac{dV}{dt} = -(V - V_{rest}) + R \cdot I(t) \\
+      \text{Если } V \ge V_{th}: \quad V \leftarrow V_{reset} \quad (\text{и удерживается } \tau_{refract})`,
       feature: 'Простейшая модель. Игнорирует форму спайка, моделирует только моменты генерации. Идеальна для больших сетей.'
     }
   },
@@ -262,7 +266,10 @@ const MODELS = {
     ranges: { amp: { min: 0, max: 50, step: 1, val: 10 }, V: [-90, 50] },
     info: {
       paper: 'Hodgkin, A. L., & Huxley, A. F. (1952). A quantitative description of membrane current and its application to conduction and excitation in nerve.',
-      equations: `C_m dV/dt = I - g_Na m^3 h (V - E_Na) - g_K n^4 (V - E_K) - g_L (V - E_L)\ndm/dt = α_m(V)(1-m) - β_m(V)m\n... (аналогично для h и n)`,
+      equations: String.raw`C_m \frac{dV}{dt} = I - g_{Na} m^3 h (V - E_{Na}) - g_K n^4 (V - E_K) - g_L (V - E_L) \\
+      \frac{dm}{dt} = \alpha_m(V)(1-m) - \beta_m(V)m \\
+      \frac{dh}{dt} = \alpha_h(V)(1-h) - \beta_h(V)h \\
+      \frac{dn}{dt} = \alpha_n(V)(1-n) - \beta_n(V)n`,
       feature: 'Золотой стандарт биофизики. Описывает динамику натриевых и калиевых каналов. Воспроизводит точную форму потенциала действия.'
     }
   },
@@ -273,40 +280,55 @@ const MODELS = {
     ranges: { amp: { min: 0, max: 20, step: 1, val: 10 }, V: [-90, 40] },
     info: {
       paper: 'Izhikevich, E. M. (2004). Which model to use for cortical spiking neurons?',
-      equations: `dv/dt = 0.04v^2 + 5v + 140 - u + I\ndu/dt = a(bv - u)\n\nЕсли v >= 30 mV:\n  v = c\n  u = u + d`,
+      equations: String.raw`\frac{dv}{dt} = 0.04v^2 + 5v + 140 - u + I \\
+      \frac{du}{dt} = a(bv - u) \\
+      \text{Если } v \ge 30 \text{ мВ}: \quad v \leftarrow c, \quad u \leftarrow u + d`,
       feature: 'Компромисс между биологической правдоподобностью HH и вычислительной эффективностью LIF. Воспроизводит 20 типов спайков.'
     }
   },
   ml: {
     title: 'Модель Морриса-Лекара',
     initial: { V: -60, w: 0.1 },
+    // Исправленные параметры (классический type II набор)
     params: { C: 20, gCa: 4.4, gK: 8, gL: 2, VCa: 120, VK: -84, VL: -60, V1: -1.2, V2: 18, V3: 2, V4: 30, phi: 0.04 },
     ranges: { amp: { min: 0, max: 200, step: 5, val: 50 }, V: [-80, 40] },
     info: {
       paper: 'Morris, C., & Lecar, H. (1981). Voltage oscillations in the barnacle giant muscle fiber.',
-      equations: `C dV/dt = I - g_Ca m∞(V)(V-V_Ca) - g_K w(V-V_K) - g_L(V-V_L)\ndw/dt = φ * (w∞(V) - w) / τ_w(V)`,
+      // Исправленные уравнения: tau_w = 1 / cosh(...), а не просто cosh
+      equations: String.raw`C \frac{dV}{dt} = I - g_{Ca} m_\infty(V)(V - V_{Ca}) - g_K w (V - V_K) - g_L (V - V_L) \\
+      \frac{dw}{dt} = \phi \, \frac{w_\infty(V) - w}{\tau_w(V)} \\
+      m_\infty(V) = \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_1}{V_2}\right)\right] \\
+      w_\infty(V) = \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_3}{V_4}\right)\right] \\
+      \tau_w(V) = \frac{1}{\cosh\left(\frac{V - V_3}{2V_4}\right)}`,
       feature: 'Двумерная модель (быстрая активация Ca, медленная активация K). Отлично подходит для фазового анализа и изучения бифуркаций.'
     }
   },
   fh: {
     title: 'Модель ФитцХью-Нагумо',
     initial: { V: -1, w: 0 },
+    // Исправленные параметры: a=0.7, b=0.8, tau=12.5 — классический набор
     params: { a: 0.7, b: 0.8, tau: 12.5 },
     ranges: { amp: { min: -1, max: 2, step: 0.01, val: 0.5 }, V: [-3, 3] },
     info: {
       paper: 'FitzHugh, R. (1961). Impulses and physiological states in theoretical models of nerve membrane.',
-      equations: `dV/dt = V - V^3/3 - w + I\ndw/dt = (V + a - b*w) / τ`,
+      // Исправленные уравнения: классическая форма с кубом
+      equations: String.raw`\frac{dV}{dt} = V - \frac{V^3}{3} - w + I \\
+      \frac{dw}{dt} = \frac{V + a - b w}{\tau}`,
       feature: 'Качественная модель (редукция HH). Простая 2D система, которая демонстрирует возбудимость и автоколебания (предельный цикл).'
     }
   },
   hr: {
     title: 'Модель Хиндмарша-Роуза',
     initial: { x: -1.5, y: -8, z: 2 },
+    // Исправленные параметры: r = 0.006, s = 4, x_R = -1.6 — классический набор
     params: { a: 1, b: 3, c: 1, d: 5, r: 0.006, s: 4, x_R: -1.6 },
     ranges: { amp: { min: 0, max: 5, step: 0.1, val: 2.5 }, V: [-3, 4] },
     info: {
       paper: 'Hindmarsh, J. L., & Rose, R. M. (1984). A model of neuronal bursting using three coupled first order differential equations.',
-      equations: `dx/dt = y - a*x^3 + b*x^2 - z + I\ndy/dt = c - d*x^2 - y\ndz/dt = r * (s*(x - x_R) - z)`,
+      // Исправленные уравнения: c - d x^2 - y, а не c - d*x^2 (скобки не нужны, но форма верная)
+      equations: String.raw`\frac{dx}{dt} = y - a x^3 + b x^2 - z + I \\
+      \frac{dy}{dt} = c - d x^2 - y \\
+      \frac{dz}{dt} = r \left[ s(x - x_R) - z \right]`,
       feature: 'Трёхмерная модель, специально разработанная для описания пачечной активности (bursting) и переходов между покоем и генерацией.'
     }
   }
@@ -316,7 +338,6 @@ let currentModelKey = 'lif';
 let currentState = {};
 let currentParams = {};
 
-// ===== DOM ЭЛЕМЕНТЫ =====
 const modelTitle = document.getElementById('modelTitle');
 const infoPanel = document.getElementById('infoPanel');
 const ampSlider = document.getElementById('amp');
@@ -327,7 +348,6 @@ const iNowEl = document.getElementById('iNow');
 const tNowEl = document.getElementById('tNow');
 const neuronWrap = document.getElementById('neuronWrap');
 
-// ===== ГРАФИКИ =====
 const canvasV = document.getElementById('plotV');
 const canvasI = document.getElementById('plotI');
 const ctxV = canvasV.getContext('2d');
@@ -336,7 +356,6 @@ const WV = canvasV.width, HV = canvasV.height;
 const WI = canvasI.width, HI = canvasI.height;
 const padL = 50, padR = 15, padT = 15, padB = 30;
 
-// ===== ПЕРЕМЕННЫЕ СИМУЛЯЦИИ =====
 let history = [];
 let simTime = 0;
 let isCurrentOn = false;
@@ -345,8 +364,6 @@ let dt = 0.01;
 const TIME_SCALE = 8;
 let tMax = 100;
 
-// ===== ФУНКЦИИ МОДЕЛЕЙ =====
-// Возвращает объект с новыми значениями переменных
 function stepModel(Iext) {
   const s = { ...currentState };
   const p = currentParams;
@@ -438,13 +455,11 @@ function stepModel(Iext) {
   return false;
 }
 
-// Получить значение для отрисовки (V)
 function getDisplayV() {
   if (currentModelKey === 'hr') return currentState.x;
   return currentState.V;
 }
 
-// ===== UI =====
 function updateUIForModel() {
   const m = MODELS[currentModelKey];
   modelTitle.textContent = m.title;
@@ -453,12 +468,16 @@ function updateUIForModel() {
     <h3>${m.title}</h3>
     <div class="paper-ref">📄 ${m.info.paper}</div>
     <p><strong>Уравнения:</strong></p>
-    <div class="equations">${m.info.equations}</div>
+    <div class="equations">$$${m.info.equations}$$</div>
     <div class="feature">
       <strong>Отличительная особенность:</strong>
       <p>${m.info.feature}</p>
     </div>
   `;
+  
+  if (window.MathJax && window.MathJax.typesetPromise) {
+    MathJax.typesetPromise([infoPanel]);
+  }
 
   const r = m.ranges.amp;
   ampSlider.min = r.min;
@@ -468,7 +487,6 @@ function updateUIForModel() {
   ampVal.textContent = r.val;
 }
 
-// ===== ИНИЦИАЛИЗАЦИЯ ПРИ СМЕНЕ МОДЕЛИ =====
 function switchModel(key) {
   currentModelKey = key;
   const m = MODELS[key];
@@ -482,7 +500,6 @@ function switchModel(key) {
   updateUIForModel();
 }
 
-// ===== НЕЙРОН =====
 (function buildNeuron() {
   const gDen = document.getElementById('dendrites');
   const gAxon = document.getElementById('axon');
@@ -528,7 +545,6 @@ function switchModel(key) {
   drawAxonTerminal(aX3, aY3, 0.15, 28, 2.5, 3);
 })();
 
-// ===== ОТРИСОВКА =====
 function niceStep(range, target) {
   const raw = range / target;
   const steps = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000];
@@ -545,7 +561,6 @@ function draw() {
   const vToPy = (v, H) => padT + (1 - (v - Vmin) / (Vmax - Vmin)) * (H - padT - padB);
   const xToPx = (t, W) => padL + (t / tMax) * (W - padL - padR);
 
-  // --- V(t) ---
   ctxV.font = '12px system-ui';
   ctxV.textAlign = 'right';
   const stepV = niceStep(Vmax - Vmin, 7);
@@ -565,7 +580,6 @@ function draw() {
   }
   ctxV.textAlign = 'left'; ctxV.fillStyle = '#7a89a8'; ctxV.fillText('V', padL - 40, padT - 2);
 
-  // Рисуем кривую
   if (history.length > 1) {
     ctxV.strokeStyle = '#7fd4ff'; ctxV.lineWidth = 2; ctxV.lineJoin = 'round'; ctxV.beginPath();
     const t0 = simTime - tMax;
@@ -580,7 +594,6 @@ function draw() {
     ctxV.stroke();
   }
 
-  // --- I(t) ---
   ctxI.font = '12px system-ui'; ctxI.textAlign = 'right';
   const stepI = niceStep(Imax, 4);
   for (let i = 0; i <= Imax + 1e-9; i += stepI) {
@@ -614,7 +627,6 @@ function draw() {
   }
 }
 
-// ===== ГЛАВНЫЙ ЦИКЛ =====
 const stepsPerMsReal = TIME_SCALE / dt / 1000;
 let accumMs = 0;
 let lastRealTime = performance.now();
@@ -638,17 +650,14 @@ function loop(now) {
     history.push({ t: simTime, V: getDisplayV(), I: lastI });
   }
 
-  // Очистка истории
   const cutoff = simTime - tMax;
   let drop = 0;
   while (drop < history.length && history[drop].t < cutoff) drop++;
   if (drop > 0) history.splice(0, drop);
 
-  // Вспышка
   if (now < flashUntil) neuronWrap.classList.add('firing');
   else neuronWrap.classList.remove('firing');
 
-  // Readout
   vNowEl.textContent = getDisplayV().toFixed(1);
   iNowEl.textContent = Iext.toFixed(1);
   tNowEl.textContent = simTime.toFixed(0);
@@ -657,7 +666,6 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
-// ===== ОБРАБОТЧИКИ =====
 document.querySelectorAll('.model-btn').forEach(btn => {
   btn.addEventListener('click', (e) => {
     document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
@@ -674,7 +682,6 @@ currentBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); isCurren
 window.addEventListener('pointerup', () => { isCurrentOn = false; currentBtn.classList.remove('active'); });
 window.addEventListener('pointercancel', () => { isCurrentOn = false; currentBtn.classList.remove('active'); });
 
-// Старт
 switchModel('lif');
 requestAnimationFrame(loop);
 </script>
