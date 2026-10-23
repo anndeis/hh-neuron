@@ -238,9 +238,7 @@
   </div>
 
   <!-- === Правая панель справки === -->
-  <div class="info-panel" id="infoPanel">
-    <!-- Сюда будет вставляться текст через JS -->
-  </div>
+  <div class="info-panel" id="infoPanel"></div>
 </div>
 
 <script>
@@ -248,76 +246,66 @@
 const MODELS = {
   lif: {
     title: 'Модель LIF (Leaky Integrate-and-Fire)',
-    params: {
-      V: -65, m: 0, h: 0, n: 0, // HH vars
-      u: 0, w: 0, x: 0, y: 0, z: 0, // Other vars
-      refractory: 0,
-      V_th: -50, V_reset: -65, tau_m: 10, R: 10
-    },
+    initial: { V: -65, refractory: 0 },
+    params: { V_th: -50, V_reset: -65, tau_m: 10, R: 10 },
+    ranges: { amp: { min: 0, max: 30, step: 1, val: 15 }, V: [-80, -40] },
     info: {
-      paper: 'Lapicque, L. (1907). Recherches quantitatives sur l\'excitation électrique des nerfs traitée comme une polarisation. J. Physiol. Pathol. Gen., 9, 620-635. [citation:13]',
-      equations: `τ_m * dV/dt = -(V - V_rest) + R * I(t)\n\nЕсли V >= V_th:\n  V = V_reset\n  (и удерживается там τ_refract мс)`,
+      paper: 'Lapicque, L. (1907). Recherches quantitatives sur l\'excitation électrique des nerfs traitée comme une polarisation.',
+      equations: `τ_m * dV/dt = -(V - V_rest) + R * I(t)\n\nЕсли V >= V_th:\n  V = V_reset\n  (удерживается τ_refract мс)`,
       feature: 'Простейшая модель. Игнорирует форму спайка, моделирует только моменты генерации. Идеальна для больших сетей.'
     }
   },
   hh: {
     title: 'Модель Ходжкина-Хаксли',
-    params: {
-      V: -65, m: 0.05, h: 0.6, n: 0.32,
-      Cm: 1, gNa: 120, gK: 36, gL: 0.3, ENa: 50, EK: -77, EL: -54.4
-    },
+    initial: { V: -65, m: 0.05, h: 0.6, n: 0.32 },
+    params: { Cm: 1, gNa: 120, gK: 36, gL: 0.3, ENa: 50, EK: -77, EL: -54.4 },
+    ranges: { amp: { min: 0, max: 50, step: 1, val: 10 }, V: [-90, 50] },
     info: {
-      paper: 'Hodgkin, A. L., & Huxley, A. F. (1952). A quantitative description of membrane current and its application to conduction and excitation in nerve. The Journal of Physiology, 117(4), 500-544. [citation:8]',
+      paper: 'Hodgkin, A. L., & Huxley, A. F. (1952). A quantitative description of membrane current and its application to conduction and excitation in nerve.',
       equations: `C_m dV/dt = I - g_Na m^3 h (V - E_Na) - g_K n^4 (V - E_K) - g_L (V - E_L)\ndm/dt = α_m(V)(1-m) - β_m(V)m\n... (аналогично для h и n)`,
       feature: 'Золотой стандарт биофизики. Описывает динамику натриевых и калиевых каналов. Воспроизводит точную форму потенциала действия.'
     }
   },
   izh: {
     title: 'Модель Ижикевича',
-    params: {
-      V: -65, u: -14, // u = b*V
-      a: 0.02, b: 0.2, c: -65, d: 2,
-      V_th: 30
-    },
+    initial: { V: -65, u: -14 },
+    params: { a: 0.02, b: 0.2, c: -65, d: 2 },
+    ranges: { amp: { min: 0, max: 20, step: 1, val: 10 }, V: [-90, 40] },
     info: {
-      paper: 'Izhikevich, E. M. (2004). Which model to use for cortical spiking neurons? IEEE Transactions on Neural Networks, 15(5), 1063-1070. [citation:3][citation:9]',
+      paper: 'Izhikevich, E. M. (2004). Which model to use for cortical spiking neurons?',
       equations: `dv/dt = 0.04v^2 + 5v + 140 - u + I\ndu/dt = a(bv - u)\n\nЕсли v >= 30 mV:\n  v = c\n  u = u + d`,
       feature: 'Компромисс между биологической правдоподобностью HH и вычислительной эффективностью LIF. Воспроизводит 20 типов спайков.'
     }
   },
   ml: {
     title: 'Модель Морриса-Лекара',
-    params: {
-      V: -60, w: 0.1,
-      C: 20, gCa: 4.4, gK: 8, gL: 2, VCa: 120, VK: -84, VL: -60,
-      V1: -1.2, V2: 18, V3: 2, V4: 30, phi: 0.04
-    },
+    initial: { V: -60, w: 0.1 },
+    params: { C: 20, gCa: 4.4, gK: 8, gL: 2, VCa: 120, VK: -84, VL: -60, V1: -1.2, V2: 18, V3: 2, V4: 30, phi: 0.04 },
+    ranges: { amp: { min: 0, max: 200, step: 5, val: 50 }, V: [-80, 40] },
     info: {
-      paper: 'Morris, C., & Lecar, H. (1981). Voltage oscillations in the barnacle giant muscle fiber. Biophysical Journal, 35(1), 193-213. [citation:4][citation:10]',
+      paper: 'Morris, C., & Lecar, H. (1981). Voltage oscillations in the barnacle giant muscle fiber.',
       equations: `C dV/dt = I - g_Ca m∞(V)(V-V_Ca) - g_K w(V-V_K) - g_L(V-V_L)\ndw/dt = φ * (w∞(V) - w) / τ_w(V)`,
       feature: 'Двумерная модель (быстрая активация Ca, медленная активация K). Отлично подходит для фазового анализа и изучения бифуркаций.'
     }
   },
   fh: {
     title: 'Модель ФитцХью-Нагумо',
-    params: {
-      V: -1, w: 0,
-      a: 0.7, b: 0.8, tau: 12.5, I_ext: 0
-    },
+    initial: { V: -1, w: 0 },
+    params: { a: 0.7, b: 0.8, tau: 12.5 },
+    ranges: { amp: { min: -1, max: 2, step: 0.01, val: 0.5 }, V: [-3, 3] },
     info: {
-      paper: 'FitzHugh, R. (1961). Impulses and physiological states in theoretical models of nerve membrane. Biophysical Journal, 1(6), 445-466. [citation:5][citation:11]',
+      paper: 'FitzHugh, R. (1961). Impulses and physiological states in theoretical models of nerve membrane.',
       equations: `dV/dt = V - V^3/3 - w + I\ndw/dt = (V + a - b*w) / τ`,
       feature: 'Качественная модель (редукция HH). Простая 2D система, которая демонстрирует возбудимость и автоколебания (предельный цикл).'
     }
   },
   hr: {
     title: 'Модель Хиндмарша-Роуза',
-    params: {
-      x: -1.5, y: -8, z: 2,
-      a: 1, b: 3, c: 1, d: 5, r: 0.006, s: 4, x_R: -1.6, I: 2.5
-    },
+    initial: { x: -1.5, y: -8, z: 2 },
+    params: { a: 1, b: 3, c: 1, d: 5, r: 0.006, s: 4, x_R: -1.6 },
+    ranges: { amp: { min: 0, max: 5, step: 0.1, val: 2.5 }, V: [-3, 4] },
     info: {
-      paper: 'Hindmarsh, J. L., & Rose, R. M. (1984). A model of neuronal bursting using three coupled first order differential equations. Proc. R. Soc. Lond. B, 221(1222), 87-102. [citation:18][citation:25]',
+      paper: 'Hindmarsh, J. L., & Rose, R. M. (1984). A model of neuronal bursting using three coupled first order differential equations.',
       equations: `dx/dt = y - a*x^3 + b*x^2 - z + I\ndy/dt = c - d*x^2 - y\ndz/dt = r * (s*(x - x_R) - z)`,
       feature: 'Трёхмерная модель, специально разработанная для описания пачечной активности (bursting) и переходов между покоем и генерацией.'
     }
@@ -325,7 +313,8 @@ const MODELS = {
 };
 
 let currentModelKey = 'lif';
-let currentModel = MODELS[currentModelKey];
+let currentState = {};
+let currentParams = {};
 
 // ===== DOM ЭЛЕМЕНТЫ =====
 const modelTitle = document.getElementById('modelTitle');
@@ -352,169 +341,148 @@ let history = [];
 let simTime = 0;
 let isCurrentOn = false;
 let flashUntil = 0;
-
-// Параметры времени
-let dt = 0.01; // Базовый шаг
+let dt = 0.01;
 const TIME_SCALE = 8;
 let tMax = 100;
 
 // ===== ФУНКЦИИ МОДЕЛЕЙ =====
-// Возвращает { dV, dOther } для одного шага
-function modelStep(modelKey, params, Iext) {
-  const p = { ...params }; // копия для изменений
-  let dV = 0, dOther = 0;
+// Возвращает объект с новыми значениями переменных
+function stepModel(Iext) {
+  const s = { ...currentState };
+  const p = currentParams;
+  let didSpike = false;
 
-  switch(modelKey) {
+  switch(currentModelKey) {
     case 'lif': {
-      if (p.refractory > 0) {
-        p.refractory -= dt;
-        return { dV: 0, dOther: 0, overrideV: p.V_reset };
+      if (s.refractory > 0) {
+        s.refractory -= dt;
+        s.V = p.V_reset;
+      } else {
+        const dV = (-(s.V - p.V_reset) + p.R * Iext) / p.tau_m;
+        s.V += dV * dt;
+        if (s.V >= p.V_th) {
+          s.V = p.V_reset;
+          s.refractory = 2;
+          didSpike = true;
+        }
       }
-      dV = (-(p.V - p.V_reset) + p.R * Iext) / p.tau_m;
-      p.V += dV * dt;
-      if (p.V >= p.V_th) {
-        p.V = p.V_reset;
-        p.refractory = 2; // 2 мс рефрактерности
-      }
-      return { dV: 0, dOther: 0, overrideV: p.V }; // V обновлен внутри
+      currentState.V = s.V; currentState.refractory = s.refractory;
+      return didSpike;
     }
     case 'hh': {
-      const alphaM = (v) => 0.1 * (v + 40) / (1 - Math.exp(-(v + 40) / 10));
+      const alphaM = (v) => 0.1 * (v + 40) / (1 - Math.exp(-(v + 40) / 10) || 1e-9);
       const betaM  = (v) => 4.0 * Math.exp(-(v + 65) / 18);
       const alphaH = (v) => 0.07 * Math.exp(-(v + 65) / 20);
       const betaH  = (v) => 1.0 / (1 + Math.exp(-(v + 35) / 10));
-      const alphaN = (v) => 0.01 * (v + 55) / (1 - Math.exp(-(v + 55) / 10));
+      const alphaN = (v) => 0.01 * (v + 55) / (1 - Math.exp(-(v + 55) / 10) || 1e-9);
       const betaN  = (v) => 0.125 * Math.exp(-(v + 65) / 80);
 
-      const INa = p.gNa * p.m**3 * p.h * (p.V - p.ENa);
-      const IK  = p.gK * p.n**4 * (p.V - p.EK);
-      const IL  = p.gL * (p.V - p.EL);
-      dV = (Iext - INa - IK - IL) / p.Cm;
+      const INa = p.gNa * s.m**3 * s.h * (s.V - p.ENa);
+      const IK  = p.gK * s.n**4 * (s.V - p.EK);
+      const IL  = p.gL * (s.V - p.EL);
+      const dV = (Iext - INa - IK - IL) / p.Cm;
       
-      const dm = alphaM(p.V)*(1-p.m) - betaM(p.V)*p.m;
-      const dh = alphaH(p.V)*(1-p.h) - betaH(p.V)*p.h;
-      const dn = alphaN(p.V)*(1-p.n) - betaN(p.V)*p.n;
+      const dm = alphaM(s.V)*(1-s.m) - betaM(s.V)*s.m;
+      const dh = alphaH(s.V)*(1-s.h) - betaH(s.V)*s.h;
+      const dn = alphaN(s.V)*(1-s.n) - betaN(s.V)*s.n;
       
-      p.V += dV * dt;
-      p.m += dm * dt; p.h += dh * dt; p.n += dn * dt;
-      return { dV: 0, dOther: 0, overrideV: p.V, overrideM: p.m, overrideH: p.h, overrideN: p.n };
+      if (s.V < -55 && s.V + dV*dt >= -55) didSpike = true;
+      s.V += dV * dt; s.m += dm * dt; s.h += dh * dt; s.n += dn * dt;
+      currentState.V = s.V; currentState.m = s.m; currentState.h = s.h; currentState.n = s.n;
+      return didSpike;
     }
     case 'izh': {
-      const dv = 0.04 * p.V**2 + 5 * p.V + 140 - p.u + Iext;
-      const du = p.a * (p.b * p.V - p.u);
-      p.V += dv * dt;
-      p.u += du * dt;
-      if (p.V >= 30) {
-        p.V = p.c;
-        p.u += p.d;
+      const dv = 0.04 * s.V**2 + 5 * s.V + 140 - s.u + Iext;
+      const du = p.a * (p.b * s.V - s.u);
+      s.V += dv * dt; s.u += du * dt;
+      if (s.V >= 30) {
+        s.V = p.c; s.u += p.d; didSpike = true;
       }
-      return { dV: 0, dOther: 0, overrideV: p.V, overrideU: p.u };
+      currentState.V = s.V; currentState.u = s.u;
+      return didSpike;
     }
     case 'ml': {
-      const m_inf = 0.5 * (1 + Math.tanh((p.V - p.V1) / p.V2));
-      const w_inf = 0.5 * (1 + Math.tanh((p.V - p.V3) / p.V4));
-      const tau_w = 1 / Math.cosh((p.V - p.V3) / (2 * p.V4));
+      const m_inf = 0.5 * (1 + Math.tanh((s.V - p.V1) / p.V2));
+      const w_inf = 0.5 * (1 + Math.tanh((s.V - p.V3) / p.V4));
+      const tau_w = 1 / Math.cosh((s.V - p.V3) / (2 * p.V4));
       
-      const ICa = p.gCa * m_inf * (p.V - p.VCa);
-      const IK  = p.gK * p.w * (p.V - p.VK);
-      const IL  = p.gL * (p.V - p.VL);
+      const ICa = p.gCa * m_inf * (s.V - p.VCa);
+      const IK  = p.gK * s.w * (s.V - p.VK);
+      const IL  = p.gL * (s.V - p.VL);
       const dV = (Iext - ICa - IK - IL) / p.C;
-      const dw = p.phi * (w_inf - p.w) / tau_w;
+      const dw = p.phi * (w_inf - s.w) / tau_w;
       
-      p.V += dV * dt;
-      p.w += dw * dt;
-      return { dV: 0, dOther: 0, overrideV: p.V, overrideW: p.w };
+      if (s.V < -20 && s.V + dV*dt >= -20) didSpike = true;
+      s.V += dV * dt; s.w += dw * dt;
+      currentState.V = s.V; currentState.w = s.w;
+      return didSpike;
     }
     case 'fh': {
-      const dV = p.V - p.V**3 / 3 - p.w + Iext;
-      const dw = (p.V + p.a - p.b * p.w) / p.tau;
-      p.V += dV * dt;
-      p.w += dw * dt;
-      return { dV: 0, dOther: 0, overrideV: p.V, overrideW: p.w };
+      const dV = s.V - s.V**3 / 3 - s.w + Iext;
+      const dw = (s.V + p.a - p.b * s.w) / p.tau;
+      if (s.V < 0 && s.V + dV*dt >= 0) didSpike = true;
+      s.V += dV * dt; s.w += dw * dt;
+      currentState.V = s.V; currentState.w = s.w;
+      return didSpike;
     }
     case 'hr': {
-      const dx = p.y - p.a * p.x**3 + p.b * p.x**2 - p.z + Iext;
-      const dy = p.c - p.d * p.x**2 - p.y;
-      const dz = p.r * (p.s * (p.x - p.x_R) - p.z);
-      p.x += dx * dt;
-      p.y += dy * dt;
-      p.z += dz * dt;
-      // Для HR V обычно ассоциируют с x, но масштаб другой. 
-      // Для отображения на графике умножим на 10 или сдвинем.
-      // Оставим как есть, но в readout покажем x.
-      return { dV: 0, dOther: 0, overrideV: p.x, overrideY: p.y, overrideZ: p.z };
+      const dx = s.y - p.a * s.x**3 + p.b * s.x**2 - s.z + Iext;
+      const dy = p.c - p.d * s.x**2 - s.y;
+      const dz = p.r * (p.s * (s.x - p.x_R) - s.z);
+      if (s.x < 0 && s.x + dx*dt >= 0) didSpike = true;
+      s.x += dx * dt; s.y += dy * dt; s.z += dz * dt;
+      currentState.x = s.x; currentState.y = s.y; currentState.z = s.z;
+      return didSpike;
     }
   }
-  return {};
+  return false;
 }
 
-// Сброс состояния при смене модели
-function resetModelState() {
-  const p = currentModel.params;
-  // Сброс в начальные значения (можно взять из MODELS)
-  const initial = MODELS[currentModelKey].params;
-  for (let key in initial) {
-    p[key] = initial[key];
-  }
-  history = [];
-  simTime = 0;
-  flashUntil = 0;
-  // Очистка графиков
-  ctxV.clearRect(0, 0, WV, HV);
-  ctxI.clearRect(0, 0, WI, HI);
-  draw();
+// Получить значение для отрисовки (V)
+function getDisplayV() {
+  if (currentModelKey === 'hr') return currentState.x;
+  return currentState.V;
 }
 
-// ===== UI ОБНОВЛЕНИЕ =====
+// ===== UI =====
 function updateUIForModel() {
-  modelTitle.textContent = currentModel.title;
+  const m = MODELS[currentModelKey];
+  modelTitle.textContent = m.title;
   
-  // Инфо-панель
-  const info = currentModel.info;
   infoPanel.innerHTML = `
-    <h3>${currentModel.title}</h3>
-    <div class="paper-ref">📄 ${info.paper}</div>
+    <h3>${m.title}</h3>
+    <div class="paper-ref">📄 ${m.info.paper}</div>
     <p><strong>Уравнения:</strong></p>
-    <div class="equations">${info.equations}</div>
+    <div class="equations">${m.info.equations}</div>
     <div class="feature">
       <strong>Отличительная особенность:</strong>
-      <p>${info.feature}</p>
+      <p>${m.info.feature}</p>
     </div>
   `;
 
-  // Настройка ползунка под модель (примерные диапазоны)
-  if (currentModelKey === 'hh' || currentModelKey === 'ml' || currentModelKey === 'hr') {
-    ampSlider.min = 0; ampSlider.max = 50; ampSlider.value = 10;
-  } else if (currentModelKey === 'izh') {
-    ampSlider.min = 0; ampSlider.max = 20; ampSlider.value = 10;
-  } else if (currentModelKey === 'lif') {
-    ampSlider.min = 0; ampSlider.max = 30; ampSlider.value = 15;
-  } else if (currentModelKey === 'fh') {
-    ampSlider.min = -1; ampSlider.max = 2; ampSlider.step = 0.01; ampSlider.value = 0.5;
-  }
-  ampVal.textContent = ampSlider.value;
+  const r = m.ranges.amp;
+  ampSlider.min = r.min;
+  ampSlider.max = r.max;
+  ampSlider.step = r.step;
+  ampSlider.value = r.val;
+  ampVal.textContent = r.val;
 }
 
-// Переключение модели
-document.querySelectorAll('.model-btn').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
-    e.target.classList.add('active');
-    
-    currentModelKey = e.target.dataset.model;
-    currentModel = MODELS[currentModelKey];
-    
-    // Восстановим шаг для ползунка
-    ampSlider.step = (currentModelKey === 'fh') ? 0.01 : 1;
-    
-    resetModelState();
-    updateUIForModel();
-  });
-});
+// ===== ИНИЦИАЛИЗАЦИЯ ПРИ СМЕНЕ МОДЕЛИ =====
+function switchModel(key) {
+  currentModelKey = key;
+  const m = MODELS[key];
+  currentState = { ...m.initial };
+  currentParams = { ...m.params };
+  
+  history = [];
+  simTime = 0;
+  flashUntil = 0;
+  
+  updateUIForModel();
+}
 
-// ===== НЕЙРОН (статичный) =====
-// (Используем тот же код, что и в прошлой версии, для краткости опустим детали генерации, 
-// так как фокус на моделях. Но нейрон останется.)
+// ===== НЕЙРОН =====
 (function buildNeuron() {
   const gDen = document.getElementById('dendrites');
   const gAxon = document.getElementById('axon');
@@ -560,17 +528,156 @@ document.querySelectorAll('.model-btn').forEach(btn => {
   drawAxonTerminal(aX3, aY3, 0.15, 28, 2.5, 3);
 })();
 
-// ===== ОТРИСОВКА ГРАФИКОВ =====
+// ===== ОТРИСОВКА =====
+function niceStep(range, target) {
+  const raw = range / target;
+  const steps = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000];
+  return steps.find(s => s >= raw) || steps[steps.length - 1];
+}
+
 function draw() {
-  // Очистка
   ctxV.clearRect(0, 0, WV, HV); ctxI.clearRect(0, 0, WI, HI);
   
-  // Для разных моделей разные диапазоны V
-  let Vmin = -90, Vmax = 50;
-  if (currentModelKey === 'izh') { Vmin = -90; Vmax = 40; }
-  if (currentModelKey === 'fh') { Vmin = -3; Vmax = 3; }
-  if (currentModelKey === 'hr') { Vmin = -3; Vmax = 4; }
-  if (currentModelKey === 'lif') { Vmin = -80; Vmax = -40; }
+  const m = MODELS[currentModelKey];
+  const Vmin = m.ranges.V[0], Vmax = m.ranges.V[1];
+  const Imax = m.ranges.amp.max;
 
   const vToPy = (v, H) => padT + (1 - (v - Vmin) / (Vmax - Vmin)) * (H - padT - padB);
-  const xToPx = (t, W) => padL + (t / tMax) * (W - pad
+  const xToPx = (t, W) => padL + (t / tMax) * (W - padL - padR);
+
+  // --- V(t) ---
+  ctxV.font = '12px system-ui';
+  ctxV.textAlign = 'right';
+  const stepV = niceStep(Vmax - Vmin, 7);
+  for (let v = Vmin; v <= Vmax + 1e-9; v += stepV) {
+    const y = vToPy(v, HV);
+    ctxV.strokeStyle = '#1a2136'; ctxV.beginPath(); ctxV.moveTo(padL, y); ctxV.lineTo(WV - padR, y); ctxV.stroke();
+    ctxV.fillStyle = '#7a89a8'; ctxV.fillText(v.toFixed(v < 1 && v > -1 ? 2 : 0), padL - 8, y + 4);
+  }
+  ctxV.strokeStyle = '#2a3550';
+  ctxV.beginPath(); ctxV.moveTo(padL, padT); ctxV.lineTo(padL, HV - padB); ctxV.lineTo(WV - padR, HV - padB); ctxV.stroke();
+
+  ctxV.textAlign = 'center'; ctxV.fillStyle = '#7a89a8';
+  const stepT = niceStep(tMax, 7);
+  for (let t = 0; t <= tMax + 1e-9; t += stepT) {
+    const x = xToPx(t, WV);
+    ctxV.strokeStyle = '#1a2136'; ctxV.beginPath(); ctxV.moveTo(x, padT); ctxV.lineTo(x, HV - padB); ctxV.stroke();
+  }
+  ctxV.textAlign = 'left'; ctxV.fillStyle = '#7a89a8'; ctxV.fillText('V', padL - 40, padT - 2);
+
+  // Рисуем кривую
+  if (history.length > 1) {
+    ctxV.strokeStyle = '#7fd4ff'; ctxV.lineWidth = 2; ctxV.lineJoin = 'round'; ctxV.beginPath();
+    const t0 = simTime - tMax;
+    let started = false;
+    for (let i = 0; i < history.length; i++) {
+      const p = history[i];
+      if (p.t < t0) continue;
+      const x = xToPx(p.t - t0, WV);
+      const y = vToPy(p.V, HV);
+      if (!started) { ctxV.moveTo(x, y); started = true; } else ctxV.lineTo(x, y);
+    }
+    ctxV.stroke();
+  }
+
+  // --- I(t) ---
+  ctxI.font = '12px system-ui'; ctxI.textAlign = 'right';
+  const stepI = niceStep(Imax, 4);
+  for (let i = 0; i <= Imax + 1e-9; i += stepI) {
+    const y = padT + (1 - i / Imax) * (HI - padT - padB);
+    ctxI.strokeStyle = '#1a2136'; ctxI.beginPath(); ctxI.moveTo(padL, y); ctxI.lineTo(WI - padR, y); ctxI.stroke();
+    ctxI.fillStyle = '#7a89a8'; ctxI.fillText(i.toFixed(i < 1 && i > 0 ? 1 : 0), padL - 8, y + 4);
+  }
+  ctxI.strokeStyle = '#2a3550';
+  ctxI.beginPath(); ctxI.moveTo(padL, padT); ctxI.lineTo(padL, HI - padB); ctxI.lineTo(WI - padR, HI - padB); ctxI.stroke();
+
+  ctxI.textAlign = 'center'; ctxI.fillStyle = '#7a89a8';
+  for (let t = 0; t <= tMax + 1e-9; t += stepT) {
+    const x = xToPx(t, WI);
+    ctxI.strokeStyle = '#2a3550'; ctxI.beginPath(); ctxI.moveTo(x, HI - padB); ctxI.lineTo(x, HI - padB + 4); ctxI.stroke();
+    ctxI.fillText(t, x, HI - padB + 16);
+  }
+  ctxI.textAlign = 'left'; ctxI.fillStyle = '#7a89a8'; ctxI.fillText('I', padL - 40, padT - 2);
+
+  if (history.length > 1) {
+    ctxI.strokeStyle = '#ffb74d'; ctxI.lineWidth = 2; ctxI.lineJoin = 'round'; ctxI.beginPath();
+    const t0 = simTime - tMax;
+    let started = false;
+    for (let i = 0; i < history.length; i++) {
+      const p = history[i];
+      if (p.t < t0) continue;
+      const x = xToPx(p.t - t0, WI);
+      const y = padT + (1 - p.I / Imax) * (HI - padT - padB);
+      if (!started) { ctxI.moveTo(x, y); started = true; } else ctxI.lineTo(x, y);
+    }
+    ctxI.stroke();
+  }
+}
+
+// ===== ГЛАВНЫЙ ЦИКЛ =====
+const stepsPerMsReal = TIME_SCALE / dt / 1000;
+let accumMs = 0;
+let lastRealTime = performance.now();
+
+function loop(now) {
+  const realDtMs = Math.min(now - lastRealTime, 100);
+  lastRealTime = now;
+  accumMs += realDtMs;
+
+  let steps = Math.floor(accumMs * stepsPerMsReal);
+  accumMs -= steps * (1 / stepsPerMsReal);
+  steps = Math.min(steps, 2000);
+
+  const Iext = isCurrentOn ? parseFloat(ampSlider.value) : 0;
+  let lastI = Iext;
+
+  for (let i = 0; i < steps; i++) {
+    const didSpike = stepModel(Iext);
+    if (didSpike) flashUntil = now + 150;
+    simTime += dt;
+    history.push({ t: simTime, V: getDisplayV(), I: lastI });
+  }
+
+  // Очистка истории
+  const cutoff = simTime - tMax;
+  let drop = 0;
+  while (drop < history.length && history[drop].t < cutoff) drop++;
+  if (drop > 0) history.splice(0, drop);
+
+  // Вспышка
+  if (now < flashUntil) neuronWrap.classList.add('firing');
+  else neuronWrap.classList.remove('firing');
+
+  // Readout
+  vNowEl.textContent = getDisplayV().toFixed(1);
+  iNowEl.textContent = Iext.toFixed(1);
+  tNowEl.textContent = simTime.toFixed(0);
+
+  draw();
+  requestAnimationFrame(loop);
+}
+
+// ===== ОБРАБОТЧИКИ =====
+document.querySelectorAll('.model-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    switchModel(e.target.dataset.model);
+  });
+});
+
+ampSlider.addEventListener('input', () => {
+  ampVal.textContent = parseFloat(ampSlider.value).toFixed(2).replace(/\.?0+$/, '');
+});
+
+currentBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); isCurrentOn = true; currentBtn.classList.add('active'); });
+window.addEventListener('pointerup', () => { isCurrentOn = false; currentBtn.classList.remove('active'); });
+window.addEventListener('pointercancel', () => { isCurrentOn = false; currentBtn.classList.remove('active'); });
+
+// Старт
+switchModel('lif');
+requestAnimationFrame(loop);
+</script>
+
+</body>
+</html>
