@@ -350,7 +350,7 @@ l34 -28 -41 -17 c-146 -58 -512 -71 -616 -22 -53 25 -129 103 -159 162 -73
     <canvas id="plotV" width="800" height="280"></canvas>
     <canvas id="plotI" width="800" height="100"></canvas>
 
-    <div class="readout">V = <b id="vNow">-65.0</b> мВ &nbsp;|&nbsp; I = <b id="iNow">0.0</b> &nbsp;|&nbsp; t = <b id="tNow">0.0</b> мс</div>
+    <div class="readout"><span id="stateLabelNow">V</span> = <b id="vNow">-65.0</b> <span id="stateUnitNow">мВ</span> &nbsp;|&nbsp; I = <b id="iNow">0.0</b> <span id="currentUnitNow">нА</span> &nbsp;|&nbsp; t = <b id="tNow">0.0</b> <span id="timeUnitNow">мс</span></div>
 
     <div class="controls">
       <div class="slider-group">
@@ -371,36 +371,39 @@ const MODELS = {
   lif: {
     title: 'Модель LIF (Leaky Integrate-and-Fire)',
     initial: { V: -65, refractory: 0 },
-    params: { V_th: -50, V_reset: -65, tau_m: 10, R: 10 },
-    ranges: { amp: { min: 0, max: 30, step: 1, val: 15 }, V: [-80, -40] },
+    params: { V_rest: -65, V_th: -50, V_reset: -65, tau_m: 10, tau_refract: 2, R: 10 },
+    stateLabel: 'V', stateUnit: 'мВ', currentUnit: 'нА', timeUnit: 'мс',
+    ranges: { amp: { min: 0, max: 30, step: 1, val: 2 }, V: [-80, -40] },
     info: {
       paper: 'Lapicque, L. (1907). Recherches quantitatives sur l\'excitation électrique des nerfs traitée comme une polarisation.',
-      equations: String.raw`\tau_m \frac{dV}{dt} = -(V - V_{rest}) + R \cdot I(t) \\
-      \text{Если } V \ge V_{th}: \quad V \leftarrow V_{reset} \quad (\text{и удерживается } \tau_{refract})`,
-      feature: 'Простейшая модель. Игнорирует форму спайка, моделирует только моменты генерации. Идеальна для больших сетей.'
+      equations: String.raw`\tau_m \frac{dV}{dt} = -(V - V_{rest}) + R I(t) \\
+      \text{Если } V \ge V_{th}: \quad V \leftarrow V_{reset}, \quad V=V_{reset} \text{ в течение } \tau_{refract}`,
+      feature: 'Упрощённая RC-модель с порогом, сбросом и рефрактерностью. Форма потенциала действия не моделируется; хорошо подходит для больших сетей. Порогово-сбросная схема — современная формализация integrate-and-fire, а не дословное уравнение всей модели у Лапика.'
     }
   },
   hh: {
     title: 'Модель Ходжкина-Хаксли',
-    initial: { V: -65, m: 0.05, h: 0.6, n: 0.32 },
+    initial: { V: -65, m: 0.052932485, h: 0.5961207535, n: 0.317676914 },
     params: { Cm: 1, gNa: 120, gK: 36, gL: 0.3, ENa: 50, EK: -77, EL: -54.4 },
+    stateLabel: 'V', stateUnit: 'мВ', currentUnit: 'мкА/см²', timeUnit: 'мс', timeUnit: 'мс',
     ranges: { amp: { min: 0, max: 50, step: 1, val: 10 }, V: [-90, 50] },
     info: {
-      paper: 'Hodgkin, A. L., & Huxley, A. F. (1952). A quantitative description of membrane current and its application to conduction and excitation in nerve.',
+      paper: 'Hodgkin, A. L., & Huxley, A. F. (1952). A quantitative description of membrane current and its application to conduction and excitation in nerve. DOI: 10.1113/jphysiol.1952.sp004764.',
       equations: String.raw`C_m \frac{dV}{dt} = I - g_{Na} m^3 h (V - E_{Na}) - g_K n^4 (V - E_K) - g_L (V - E_L) \\
       \frac{dm}{dt} = \alpha_m(V)(1-m) - \beta_m(V)m \\
       \frac{dh}{dt} = \alpha_h(V)(1-h) - \beta_h(V)h \\
       \frac{dn}{dt} = \alpha_n(V)(1-n) - \beta_n(V)n`,
-      feature: 'Золотой стандарт биофизики. Описывает динамику натриевых и калиевых каналов. Воспроизводит точную форму потенциала действия.'
+      feature: 'Биофизическая модель гигантского аксона кальмара: описывает натриевый, калиевый и утечечный токи вместе с кинетикой ворот m, h и n. При исходной параметризации количественно воспроизводит экспериментальные потенциалы действия, но не является универсальной моделью любой клетки.'
     }
   },
   izh: {
     title: 'Модель Ижикевича',
-    initial: { V: -65, u: -14 },
+    initial: { V: -70, u: -14 },
     params: { a: 0.02, b: 0.2, c: -65, d: 2 },
+    stateLabel: 'v', stateUnit: 'мВ', currentUnit: 'усл. ед.', timeUnit: 'мс',
     ranges: { amp: { min: 0, max: 20, step: 1, val: 10 }, V: [-90, 40] },
     info: {
-      paper: 'Izhikevich, E. M. (2004). Which model to use for cortical spiking neurons?',
+      paper: 'Izhikevich, E. M. (2003). Simple model of spiking neurons. IEEE Trans. Neural Networks, 14(6), 1569–1572. DOI: 10.1109/TNN.2003.820440.',
       equations: String.raw`\frac{dv}{dt} = 0.04v^2 + 5v + 140 - u + I \\
       \frac{du}{dt} = a(bv - u) \\
       \text{Если } v \ge 30 \text{ мВ}: \quad v \leftarrow c, \quad u \leftarrow u + d`,
@@ -409,42 +412,45 @@ const MODELS = {
   },
   ml: {
     title: 'Модель Морриса-Лекара',
-    initial: { V: -60, w: 0.1 },
+    initial: { V: -60.8553822323, w: 0.014915024954 },
     params: { C: 20, gCa: 4.4, gK: 8, gL: 2, VCa: 120, VK: -84, VL: -60, V1: -1.2, V2: 18, V3: 2, V4: 30, phi: 0.04 },
-    ranges: { amp: { min: 0, max: 200, step: 5, val: 50 }, V: [-80, 40] },
+    stateLabel: 'V', stateUnit: 'мВ', currentUnit: 'мкА/см²',
+    ranges: { amp: { min: 0, max: 200, step: 5, val: 100 }, V: [-80, 60] },
     info: {
-      paper: 'Morris, C., & Lecar, H. (1981). Voltage oscillations in the barnacle giant muscle fiber.',
+      paper: 'Morris, C., & Lecar, H. (1981). Voltage oscillations in the barnacle giant muscle fiber. DOI: 10.1016/S0006-3495(81)84782-0.',
       equations: String.raw`C \frac{dV}{dt} = I - g_{Ca} m_\infty(V)(V - V_{Ca}) - g_K w (V - V_K) - g_L (V - V_L) \\
       \frac{dw}{dt} = \phi \, \frac{w_\infty(V) - w}{\tau_w(V)} \\
       m_\infty(V) = \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_1}{V_2}\right)\right] \\
       w_\infty(V) = \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_3}{V_4}\right)\right] \\
       \tau_w(V) = \frac{1}{\cosh\left(\frac{V - V_3}{2V_4}\right)}`,
-      feature: 'Двумерная модель (быстрая активация Ca, медленная активация K). Отлично подходит для фазового анализа и изучения бифуркаций.'
+      feature: 'Двумерная модель, предложенная для описания электрических колебаний гигантского мышечного волокна усоногого рака. Здесь выбран распространённый набор параметров C=20, gCa=4.4, gK=8, gL=2, V3=2, V4=30, φ=0.04; динамический режим зависит от приложенного тока. Это не исходная модель нейрона коры.'
     }
   },
   fh: {
     title: 'Модель ФитцХью-Нагумо',
-    initial: { V: -1, w: 0 },
+    initial: { V: -1.1994080352, w: -0.6242600441 },
     params: { a: 0.7, b: 0.8, tau: 12.5 },
+    stateLabel: 'v', stateUnit: 'безразм.', currentUnit: 'безразм.', timeUnit: 'мс',
     ranges: { amp: { min: -1, max: 2, step: 0.01, val: 0.5 }, V: [-3, 3] },
     info: {
-      paper: 'FitzHugh, R. (1961). Impulses and physiological states in theoretical models of nerve membrane.',
+      paper: 'FitzHugh, R. (1961). Impulses and physiological states in theoretical models of nerve membrane; Nagumo, Arimoto & Yoshizawa (1962). An active pulse transmission line simulating nerve axon. DOI: 10.1109/JRPROC.1962.288235.',
       equations: String.raw`\frac{dV}{dt} = V - \frac{V^3}{3} - w + I \\
       \frac{dw}{dt} = \frac{V + a - b w}{\tau}`,
-      feature: 'Качественная модель (редукция HH). Простая 2D система, которая демонстрирует возбудимость и автоколебания (предельный цикл).'
+      feature: 'Феноменологическая двумерная модель возбудимости и восстановления. Уравнения в интерфейсе — распространённая безразмерная форма FitzHugh–Nagumo; не следует трактовать её как единственную буквальную запись исходной системы ФитцХью 1961 года.'
     }
   },
   hr: {
     title: 'Модель Хиндмарша-Роуза',
-    initial: { x: -1.5, y: -8, z: 2 },
-    params: { a: 1, b: 3, c: 1, d: 5, r: 0.006, s: 4, x_R: -1.6 },
+    initial: { x: -1.60453453, y: -11.87265529, z: -0.01813812 },
+    params: { a: 1, b: 3, c: 1, d: 5, r: 0.001, s: 4, x_R: -1.6 },
+    stateLabel: 'x', stateUnit: 'безразм.', currentUnit: 'безразм.', timeUnit: 'мод. ед.',
     ranges: { amp: { min: 0, max: 5, step: 0.1, val: 2.5 }, V: [-3, 4] },
     info: {
-      paper: 'Hindmarsh, J. L., & Rose, R. M. (1984). A model of neuronal bursting using three coupled first order differential equations.',
+      paper: 'Hindmarsh, J. L., & Rose, R. M. (1984). A model of neuronal bursting using three coupled first order differential equations. DOI: 10.1098/rspb.1984.0024.',
       equations: String.raw`\frac{dx}{dt} = y - a x^3 + b x^2 - z + I \\
       \frac{dy}{dt} = c - d x^2 - y \\
       \frac{dz}{dt} = r \left[ s(x - x_R) - z \right]`,
-      feature: 'Трёхмерная модель, специально разработанная для описания пачечной активности (bursting) и переходов между покоем и генерацией.'
+      feature: 'Трёхмерная модель пачечной активности. Использован распространённый набор a=1, b=3, c=1, d=5, r=0.001, s=4, xR=−1.6; при этом наличие и форма пачек зависят от внешнего тока I. Переменные безразмерные, поэтому x не следует подписывать как напряжение в мВ; время показано в модельных единицах.'
     }
   }
 };
@@ -462,6 +468,10 @@ const currentBtn = document.getElementById('currentBtn');
 const vNowEl = document.getElementById('vNow');
 const iNowEl = document.getElementById('iNow');
 const tNowEl = document.getElementById('tNow');
+const stateLabelNowEl = document.getElementById('stateLabelNow');
+const stateUnitNowEl = document.getElementById('stateUnitNow');
+const currentUnitNowEl = document.getElementById('currentUnitNow');
+const timeUnitNowEl = document.getElementById('timeUnitNow');
 const neuronWrap = document.getElementById('neuronWrap');
 
 // ===== ГРАФИКИ =====
@@ -482,6 +492,14 @@ const TIME_SCALE = 8;
 let tMax = 100;
 
 // ===== МОДЕЛИ =====
+// Stable evaluation of x / (1 - exp(-x/y)); avoids 0/0 in the HH
+// alpha_m rate at V = -40 mV and alpha_n rate at V = -55 mV.
+function vtrap(x, y) {
+  const q = x / y;
+  if (Math.abs(q) < 1e-6) return y * (1 + q / 2);
+  return x / (-Math.expm1(-q));
+}
+
 function stepModel(Iext) {
   const s = { ...currentState };
   const p = currentParams;
@@ -489,18 +507,24 @@ function stepModel(Iext) {
 
   switch(currentModelKey) {
     case 'lif': {
-      if (s.refractory > 0) { s.refractory -= dt; s.V = p.V_reset; }
-      else {
-        const dV = (-(s.V - p.V_reset) + p.R * Iext) / p.tau_m;
+      if (s.refractory > 0) {
+        s.refractory = Math.max(0, s.refractory - dt);
+        s.V = p.V_reset;
+      } else {
+        const dV = (-(s.V - p.V_rest) + p.R * Iext) / p.tau_m;
         s.V += dV * dt;
-        if (s.V >= p.V_th) { s.V = p.V_reset; s.refractory = 2; didSpike = true; }
+        if (s.V >= p.V_th) {
+          s.V = p.V_reset;
+          s.refractory = p.tau_refract;
+          didSpike = true;
+        }
       }
       currentState.V = s.V; currentState.refractory = s.refractory; return didSpike;
     }
     case 'hh': {
-      const aM = v => 0.1*(v+40)/(1-Math.exp(-(v+40)/10)||1e-9), bM = v => 4*Math.exp(-(v+65)/18);
-      const aH = v => 0.07*Math.exp(-(v+65)/20), bH = v => 1/(1+Math.exp(-(v+35)/10));
-      const aN = v => 0.01*(v+55)/(1-Math.exp(-(v+55)/10)||1e-9), bN = v => 0.125*Math.exp(-(v+65)/80);
+      const aM = v => 0.1 * vtrap(v + 40, 10), bM = v => 4 * Math.exp(-(v + 65) / 18);
+      const aH = v => 0.07 * Math.exp(-(v + 65) / 20), bH = v => 1 / (1 + Math.exp(-(v + 35) / 10));
+      const aN = v => 0.01 * vtrap(v + 55, 10), bN = v => 0.125 * Math.exp(-(v + 65) / 80);
       const INa = p.gNa * s.m**3 * s.h * (s.V - p.ENa), IK = p.gK * s.n**4 * (s.V - p.EK), IL = p.gL * (s.V - p.EL);
       const dV = (Iext - INa - IK - IL) / p.Cm;
       const dm = aM(s.V)*(1-s.m) - bM(s.V)*s.m, dh = aH(s.V)*(1-s.h) - bH(s.V)*s.h, dn = aN(s.V)*(1-s.n) - bN(s.V)*s.n;
@@ -543,6 +567,10 @@ function getDisplayV() { return currentModelKey === 'hr' ? currentState.x : curr
 function updateUIForModel() {
   const m = MODELS[currentModelKey];
   modelTitle.textContent = m.title;
+  stateLabelNowEl.textContent = m.stateLabel;
+  stateUnitNowEl.textContent = m.stateUnit;
+  currentUnitNowEl.textContent = m.currentUnit;
+  timeUnitNowEl.textContent = m.timeUnit;
   infoPanel.innerHTML = `
     <h3>${m.title}</h3>
     <div class="paper-ref">📄 ${m.info.paper}</div>
@@ -575,8 +603,10 @@ function niceStep(range, target) {
 function draw() {
   ctxV.clearRect(0, 0, WV, HV); ctxI.clearRect(0, 0, WI, HI);
   const m = MODELS[currentModelKey];
-  const Vmin = m.ranges.V[0], Vmax = m.ranges.V[1], Imax = m.ranges.amp.max;
+  const Vmin = m.ranges.V[0], Vmax = m.ranges.V[1];
+  const Imin = m.ranges.amp.min, Imax = m.ranges.amp.max;
   const vToPy = (v, H) => padT + (1 - (v - Vmin) / (Vmax - Vmin)) * (H - padT - padB);
+  const iToPy = i => padT + (1 - (i - Imin) / (Imax - Imin)) * (HI - padT - padB);
   const xToPx = (t, W) => padL + (t / tMax) * (W - padL - padR);
 
   ctxV.font = '12px system-ui'; ctxV.textAlign = 'right';
@@ -594,7 +624,7 @@ function draw() {
     const x = xToPx(t, WV);
     ctxV.strokeStyle = '#1a2136'; ctxV.beginPath(); ctxV.moveTo(x, padT); ctxV.lineTo(x, HV - padB); ctxV.stroke();
   }
-  ctxV.textAlign = 'left'; ctxV.fillStyle = '#7a89a8'; ctxV.fillText('V', padL - 40, padT - 2);
+  ctxV.textAlign = 'left'; ctxV.fillStyle = '#7a89a8'; ctxV.fillText(MODELS[currentModelKey].stateLabel, padL - 40, padT - 2);
 
   if (history.length > 1) {
     ctxV.strokeStyle = '#7fd4ff'; ctxV.lineWidth = 2; ctxV.lineJoin = 'round'; ctxV.beginPath();
@@ -608,11 +638,12 @@ function draw() {
   }
 
   ctxI.font = '12px system-ui'; ctxI.textAlign = 'right';
-  const stepI = niceStep(Imax, 4);
-  for (let i = 0; i <= Imax + 1e-9; i += stepI) {
-    const y = padT + (1 - i / Imax) * (HI - padT - padB);
+  const stepI = niceStep(Imax - Imin, 4);
+  const firstI = Math.ceil(Imin / stepI) * stepI;
+  for (let i = firstI; i <= Imax + 1e-9; i += stepI) {
+    const y = iToPy(i);
     ctxI.strokeStyle = '#1a2136'; ctxI.beginPath(); ctxI.moveTo(padL, y); ctxI.lineTo(WI - padR, y); ctxI.stroke();
-    ctxI.fillStyle = '#7a89a8'; ctxI.fillText(i.toFixed(i<1&&i>0?1:0), padL - 8, y + 4);
+    ctxI.fillStyle = '#7a89a8'; ctxI.fillText(i.toFixed(Math.abs(i)<1 && i!==0 ? 1 : 0), padL - 8, y + 4);
   }
   ctxI.strokeStyle = '#2a3550'; ctxI.beginPath(); ctxI.moveTo(padL, padT); ctxI.lineTo(padL, HI - padB); ctxI.lineTo(WI - padR, HI - padB); ctxI.stroke();
 
@@ -629,7 +660,7 @@ function draw() {
     const t0 = simTime - tMax; let started = false;
     for (let i = 0; i < history.length; i++) {
       const p = history[i]; if (p.t < t0) continue;
-      const x = xToPx(p.t - t0, WI), y = padT + (1 - p.I / Imax) * (HI - padT - padB);
+      const x = xToPx(p.t - t0, WI), y = iToPy(p.I);
       if (!started) { ctxI.moveTo(x, y); started = true; } else ctxI.lineTo(x, y);
     }
     ctxI.stroke();
@@ -670,7 +701,7 @@ function loop(now) {
 
   vNowEl.textContent = getDisplayV().toFixed(1);
   iNowEl.textContent = Iext.toFixed(1);
-  tNowEl.textContent = simTime.toFixed(0);
+  tNowEl.textContent = simTime.toFixed(1);
 
   draw();
   requestAnimationFrame(loop);
