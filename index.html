@@ -2,569 +2,575 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Симулятор нейрона Ходжкина-Хаксли</title>
+<title>Симулятор нейронов: от LIF до Хиндмарша-Роуза</title>
 <style>
+  :root {
+    --bg: #0f1420;
+    --panel-bg: #16203a;
+    --border: #2a3550;
+    --text: #e6e6e6;
+    --text-dim: #9fb3d9;
+    --accent: #7fd4ff;
+    --accent-dark: #3a4a70;
+    --danger: #d94848;
+  }
+  * { box-sizing: border-box; }
   body {
-    font-family: system-ui, sans-serif;
-    background: #0f1420;
-    color: #e6e6e6;
+    font-family: system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
     margin: 0;
     padding: 20px;
     display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .app-container {
+    display: flex;
+    gap: 20px;
+    max-width: 1600px;
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  /* === Левое меню === */
+  .sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: sticky;
+    top: 20px;
+  }
+  .sidebar h2 {
+    font-size: 16px;
+    margin: 0 0 12px 0;
+    color: var(--text-dim);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .model-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.15s;
+    font-weight: 500;
+  }
+  .model-btn:hover {
+    background: #1e2a45;
+    border-color: var(--accent-dark);
+  }
+  .model-btn.active {
+    background: var(--accent-dark);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(127, 212, 255, 0.2);
+  }
+
+  /* === Центральная часть === */
+  .main-content {
+    flex-grow: 1;
+    display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 16px;
+    min-width: 0;
   }
-  h1 { font-size: 20px; font-weight: 500; margin-bottom: 16px; }
+  h1 { font-size: 20px; font-weight: 500; margin: 0; text-align: center; }
+
+  .neuron-wrap {
+    padding: 8px 14px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    width: fit-content;
+  }
+  .neuron-wrap.firing {
+    box-shadow: 0 0 24px rgba(127, 212, 255, 0.55);
+    border-color: var(--accent);
+  }
+  .neuron-svg .neuron-body { fill: #5a6e9e; stroke: #a8c0e8; stroke-width: 1.5; transition: fill 0.15s, stroke 0.15s; }
+  .neuron-svg .neuron-axon { stroke: #a8c0e8; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.15s; }
+  .neuron-svg .neuron-dendrite { stroke: #a8c0e8; fill: none; stroke-linecap: round; transition: stroke 0.15s; }
+  .neuron-svg .nucleus { fill: #7fd4ff; transition: fill 0.15s; }
+  .neuron-svg .synapse { fill: #a8c0e8; transition: fill 0.15s; }
+  .neuron-wrap.firing .neuron-body { fill: #7fd4ff; stroke: #ffffff; filter: drop-shadow(0 0 12px #7fd4ff); }
+  .neuron-wrap.firing .neuron-axon { stroke: #ffffff; filter: drop-shadow(0 0 10px #7fd4ff); }
+  .neuron-wrap.firing .neuron-dendrite { stroke: #ffffff; }
+  .neuron-wrap.firing .nucleus { fill: #ffffff; }
+  .neuron-wrap.firing .synapse { fill: #ffffff; filter: drop-shadow(0 0 8px #7fd4ff); }
+
   canvas {
     background: #0a0e17;
-    border: 1px solid #2a3550;
+    border: 1px solid var(--border);
     border-radius: 8px;
     display: block;
   }
   #plotV { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: none; }
   #plotI { border-top-left-radius: 0; border-top-right-radius: 0; }
 
-  /* ===== Нейрон сверху ===== */
-  .neuron-wrap {
-    margin-bottom: 16px;
-    padding: 8px 14px;
-    background: #16203a;
-    border: 1px solid #4a5a80;
-    border-radius: 12px;
-    transition: box-shadow 0.15s, border-color 0.15s;
-  }
-  .neuron-wrap.firing {
-    box-shadow: 0 0 24px rgba(127, 212, 255, 0.55);
-    border-color: #7fd4ff;
-  }
-
-  /* Синие цвета, как в предыдущей версии */
-  .neuron-svg .neuron-body {
-    fill: #5a6e9e;
-    stroke: #a8c0e8;
-    stroke-width: 1.5;
-    transition: fill 0.15s, stroke 0.15s;
-  }
-  .neuron-svg .neuron-axon {
-    stroke: #a8c0e8;
-    fill: none;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    transition: stroke 0.15s;
-  }
-  .neuron-svg .neuron-dendrite {
-    stroke: #a8c0e8;
-    fill: none;
-    stroke-linecap: round;
-    transition: stroke 0.15s;
-  }
-  .neuron-svg .nucleus {
-    fill: #7fd4ff;
-    transition: fill 0.15s;
-  }
-  .neuron-svg .synapse {
-    fill: #a8c0e8;
-    transition: fill 0.15s;
-  }
-
-  /* Эффект вспышки */
-  .neuron-wrap.firing .neuron-body {
-    fill: #7fd4ff;
-    stroke: #ffffff;
-    filter: drop-shadow(0 0 12px #7fd4ff);
-  }
-  .neuron-wrap.firing .neuron-axon {
-    stroke: #ffffff;
-    filter: drop-shadow(0 0 10px #7fd4ff);
-  }
-  .neuron-wrap.firing .neuron-dendrite {
-    stroke: #ffffff;
-  }
-  .neuron-wrap.firing .nucleus {
-    fill: #ffffff;
-  }
-  .neuron-wrap.firing .synapse {
-    fill: #ffffff;
-    filter: drop-shadow(0 0 8px #7fd4ff);
-  }
+  .readout { font-size: 14px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  .readout b { color: var(--accent); font-weight: 600; }
 
   .controls {
-    margin-top: 16px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap; justify-content: center;
+    background: var(--panel-bg); padding: 12px 24px; border-radius: 12px; border: 1px solid var(--border);
   }
-  .slider-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  input[type=range] { width: 220px; }
+  .slider-group { display: flex; align-items: center; gap: 10px; }
+  input[type=range] { width: 200px; accent-color: var(--accent); }
   #currentBtn {
-    padding: 10px 28px;
-    font-size: 16px;
-    font-weight: 600;
-    border: none;
-    border-radius: 8px;
-    background: #3a4a70;
-    color: #fff;
-    cursor: pointer;
-    user-select: none;
+    padding: 10px 28px; font-size: 16px; font-weight: 600; border: none; border-radius: 8px;
+    background: var(--accent-dark); color: #fff; cursor: pointer; user-select: none;
     transition: background 0.15s;
   }
-  #currentBtn.active { background: #d94848; }
+  #currentBtn.active { background: var(--danger); }
   #currentBtn:active { transform: translateY(1px); }
-  .value {
-    font-variant-numeric: tabular-nums;
-    min-width: 60px;
-    text-align: right;
-    color: #7fd4ff;
-  }
-  .readout {
-    margin-top: 10px;
+  .value { font-variant-numeric: tabular-nums; min-width: 60px; text-align: right; color: var(--accent); }
+
+  /* === Правая панель справки === */
+  .info-panel {
+    width: 320px;
+    flex-shrink: 0;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
     font-size: 14px;
-    color: #9fb3d9;
-    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
   }
-  .readout b { color: #7fd4ff; font-weight: 600; }
+  .info-panel h3 {
+    color: var(--accent);
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 18px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+  }
+  .info-panel .paper-ref {
+    font-style: italic;
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-bottom: 16px;
+    padding: 8px;
+    background: #0f1420;
+    border-radius: 6px;
+    border-left: 3px solid var(--accent);
+  }
+  .info-panel .equations {
+    background: #0a0e17;
+    padding: 12px;
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    overflow-x: auto;
+    margin: 12px 0;
+    color: #b8e8ff;
+    white-space: pre-wrap;
+  }
+  .info-panel .feature {
+    margin-top: 16px;
+    padding: 12px;
+    background: rgba(127, 212, 255, 0.08);
+    border-radius: 6px;
+    border: 1px solid rgba(127, 212, 255, 0.2);
+  }
+  .info-panel .feature strong { color: var(--accent); display: block; margin-bottom: 4px; }
+  .info-panel p { margin: 8px 0; color: #c0cce0; }
+
 </style>
 </head>
 <body>
 
-<h1>Мембранный потенциал и ток (модель Ходжкина-Хаксли)</h1>
-
-<!-- ===== Нейрон ===== -->
-<div class="neuron-wrap" id="neuronWrap">
-  <svg class="neuron-svg" width="400" height="160" viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg">
-    <g id="dendrites"></g>
-    <ellipse class="neuron-body" cx="100" cy="80" rx="30" ry="24" />
-    <circle class="nucleus" cx="100" cy="80" r="6" />
-    <g id="axon"></g>
-  </svg>
-</div>
-
-<canvas id="plotV" width="800" height="340"></canvas>
-<canvas id="plotI" width="800" height="120"></canvas>
-
-<div class="readout">V = <b id="vNow">-65.0</b> мВ &nbsp;|&nbsp; I = <b id="iNow">0.0</b> мкА/см² &nbsp;|&nbsp; t = <b id="tNow">0.0</b> мс</div>
-
-<div class="controls">
-  <div class="slider-group">
-    <label for="amp">Амплитуда тока:</label>
-    <input type="range" id="amp" min="0" max="15" step="0.1" value="10">
-    <span class="value" id="ampVal">10.0 мкА/см²</span>
+<div class="app-container">
+  <!-- === Левое меню === -->
+  <div class="sidebar">
+    <h2>Модели</h2>
+    <button class="model-btn active" data-model="lif">LIF</button>
+    <button class="model-btn" data-model="hh">Ходжкина-Хаксли</button>
+    <button class="model-btn" data-model="izh">Ижикевича</button>
+    <button class="model-btn" data-model="ml">Морриса-Лекара</button>
+    <button class="model-btn" data-model="fh">ФитцХью-Нагумо</button>
+    <button class="model-btn" data-model="hr">Хиндмарша-Роуза</button>
   </div>
-  <button id="currentBtn">ТОК</button>
+
+  <!-- === Центр === -->
+  <div class="main-content">
+    <h1 id="modelTitle">Модель LIF</h1>
+
+    <div class="neuron-wrap" id="neuronWrap">
+      <svg class="neuron-svg" width="400" height="160" viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg">
+        <g id="dendrites"></g>
+        <ellipse class="neuron-body" cx="100" cy="80" rx="30" ry="24" />
+        <circle class="nucleus" cx="100" cy="80" r="6" />
+        <g id="axon"></g>
+      </svg>
+    </div>
+
+    <canvas id="plotV" width="800" height="280"></canvas>
+    <canvas id="plotI" width="800" height="100"></canvas>
+
+    <div class="readout">V = <b id="vNow">-65.0</b> мВ &nbsp;|&nbsp; I = <b id="iNow">0.0</b> &nbsp;|&nbsp; t = <b id="tNow">0.0</b> мс</div>
+
+    <div class="controls">
+      <div class="slider-group">
+        <label for="amp">Стимул:</label>
+        <input type="range" id="amp" min="0" max="100" step="1" value="10">
+        <span class="value" id="ampVal">10</span>
+      </div>
+      <button id="currentBtn">ТОК</button>
+    </div>
+  </div>
+
+  <!-- === Правая панель справки === -->
+  <div class="info-panel" id="infoPanel">
+    <!-- Сюда будет вставляться текст через JS -->
+  </div>
 </div>
 
 <script>
-// ===== Параметры модели Ходжкина-Хаксли =====
-const Cm = 1.0;
-const gNa = 120.0;
-const gK  = 36.0;
-const gL  = 0.3;
-const ENa = 50.0;
-const EK  = -77.0;
-const EL  = -54.4;
+// ===== ГЛОБАЛЬНЫЕ ДАННЫЕ =====
+const MODELS = {
+  lif: {
+    title: 'Модель LIF (Leaky Integrate-and-Fire)',
+    params: {
+      V: -65, m: 0, h: 0, n: 0, // HH vars
+      u: 0, w: 0, x: 0, y: 0, z: 0, // Other vars
+      refractory: 0,
+      V_th: -50, V_reset: -65, tau_m: 10, R: 10
+    },
+    info: {
+      paper: 'Lapicque, L. (1907). Recherches quantitatives sur l\'excitation électrique des nerfs traitée comme une polarisation. J. Physiol. Pathol. Gen., 9, 620-635. [citation:13]',
+      equations: `τ_m * dV/dt = -(V - V_rest) + R * I(t)\n\nЕсли V >= V_th:\n  V = V_reset\n  (и удерживается там τ_refract мс)`,
+      feature: 'Простейшая модель. Игнорирует форму спайка, моделирует только моменты генерации. Идеальна для больших сетей.'
+    }
+  },
+  hh: {
+    title: 'Модель Ходжкина-Хаксли',
+    params: {
+      V: -65, m: 0.05, h: 0.6, n: 0.32,
+      Cm: 1, gNa: 120, gK: 36, gL: 0.3, ENa: 50, EK: -77, EL: -54.4
+    },
+    info: {
+      paper: 'Hodgkin, A. L., & Huxley, A. F. (1952). A quantitative description of membrane current and its application to conduction and excitation in nerve. The Journal of Physiology, 117(4), 500-544. [citation:8]',
+      equations: `C_m dV/dt = I - g_Na m^3 h (V - E_Na) - g_K n^4 (V - E_K) - g_L (V - E_L)\ndm/dt = α_m(V)(1-m) - β_m(V)m\n... (аналогично для h и n)`,
+      feature: 'Золотой стандарт биофизики. Описывает динамику натриевых и калиевых каналов. Воспроизводит точную форму потенциала действия.'
+    }
+  },
+  izh: {
+    title: 'Модель Ижикевича',
+    params: {
+      V: -65, u: -14, // u = b*V
+      a: 0.02, b: 0.2, c: -65, d: 2,
+      V_th: 30
+    },
+    info: {
+      paper: 'Izhikevich, E. M. (2004). Which model to use for cortical spiking neurons? IEEE Transactions on Neural Networks, 15(5), 1063-1070. [citation:3][citation:9]',
+      equations: `dv/dt = 0.04v^2 + 5v + 140 - u + I\ndu/dt = a(bv - u)\n\nЕсли v >= 30 mV:\n  v = c\n  u = u + d`,
+      feature: 'Компромисс между биологической правдоподобностью HH и вычислительной эффективностью LIF. Воспроизводит 20 типов спайков.'
+    }
+  },
+  ml: {
+    title: 'Модель Морриса-Лекара',
+    params: {
+      V: -60, w: 0.1,
+      C: 20, gCa: 4.4, gK: 8, gL: 2, VCa: 120, VK: -84, VL: -60,
+      V1: -1.2, V2: 18, V3: 2, V4: 30, phi: 0.04
+    },
+    info: {
+      paper: 'Morris, C., & Lecar, H. (1981). Voltage oscillations in the barnacle giant muscle fiber. Biophysical Journal, 35(1), 193-213. [citation:4][citation:10]',
+      equations: `C dV/dt = I - g_Ca m∞(V)(V-V_Ca) - g_K w(V-V_K) - g_L(V-V_L)\ndw/dt = φ * (w∞(V) - w) / τ_w(V)`,
+      feature: 'Двумерная модель (быстрая активация Ca, медленная активация K). Отлично подходит для фазового анализа и изучения бифуркаций.'
+    }
+  },
+  fh: {
+    title: 'Модель ФитцХью-Нагумо',
+    params: {
+      V: -1, w: 0,
+      a: 0.7, b: 0.8, tau: 12.5, I_ext: 0
+    },
+    info: {
+      paper: 'FitzHugh, R. (1961). Impulses and physiological states in theoretical models of nerve membrane. Biophysical Journal, 1(6), 445-466. [citation:5][citation:11]',
+      equations: `dV/dt = V - V^3/3 - w + I\ndw/dt = (V + a - b*w) / τ`,
+      feature: 'Качественная модель (редукция HH). Простая 2D система, которая демонстрирует возбудимость и автоколебания (предельный цикл).'
+    }
+  },
+  hr: {
+    title: 'Модель Хиндмарша-Роуза',
+    params: {
+      x: -1.5, y: -8, z: 2,
+      a: 1, b: 3, c: 1, d: 5, r: 0.006, s: 4, x_R: -1.6, I: 2.5
+    },
+    info: {
+      paper: 'Hindmarsh, J. L., & Rose, R. M. (1984). A model of neuronal bursting using three coupled first order differential equations. Proc. R. Soc. Lond. B, 221(1222), 87-102. [citation:18][citation:25]',
+      equations: `dx/dt = y - a*x^3 + b*x^2 - z + I\ndy/dt = c - d*x^2 - y\ndz/dt = r * (s*(x - x_R) - z)`,
+      feature: 'Трёхмерная модель, специально разработанная для описания пачечной активности (bursting) и переходов между покоем и генерацией.'
+    }
+  }
+};
 
-function alphaM(V) { return 0.1 * (V + 40) / (1 - Math.exp(-(V + 40) / 10)); }
-function betaM(V)  { return 4.0 * Math.exp(-(V + 65) / 18); }
-function alphaH(V) { return 0.07 * Math.exp(-(V + 65) / 20); }
-function betaH(V)  { return 1.0 / (1 + Math.exp(-(V + 35) / 10)); }
-function alphaN(V) { return 0.01 * (V + 55) / (1 - Math.exp(-(V + 55) / 10)); }
-function betaN(V)  { return 0.125 * Math.exp(-(V + 65) / 80); }
+let currentModelKey = 'lif';
+let currentModel = MODELS[currentModelKey];
 
-// Состояние модели
-let V = -65.0;
-let m = alphaM(V) / (alphaM(V) + betaM(V));
-let h = alphaH(V) / (alphaH(V) + betaH(V));
-let n = alphaN(V) / (alphaN(V) + betaN(V));
-
-// ===== Время и график =====
-const dt = 0.001;
-const tMax = 100;
-const TIME_SCALE = 6;
-const history = [];
-let simTime = 0;
-
-// ===== Порог для вспышки =====
-const THRESHOLD = -55;
-const FLASH_MS = 150;
-let flashUntil = 0;
-
-// ===== Управление =====
+// ===== DOM ЭЛЕМЕНТЫ =====
+const modelTitle = document.getElementById('modelTitle');
+const infoPanel = document.getElementById('infoPanel');
 const ampSlider = document.getElementById('amp');
-const ampVal    = document.getElementById('ampVal');
+const ampVal = document.getElementById('ampVal');
 const currentBtn = document.getElementById('currentBtn');
 const vNowEl = document.getElementById('vNow');
 const iNowEl = document.getElementById('iNow');
 const tNowEl = document.getElementById('tNow');
 const neuronWrap = document.getElementById('neuronWrap');
+
+// ===== ГРАФИКИ =====
+const canvasV = document.getElementById('plotV');
+const canvasI = document.getElementById('plotI');
+const ctxV = canvasV.getContext('2d');
+const ctxI = canvasI.getContext('2d');
+const WV = canvasV.width, HV = canvasV.height;
+const WI = canvasI.width, HI = canvasI.height;
+const padL = 50, padR = 15, padT = 15, padB = 30;
+
+// ===== ПЕРЕМЕННЫЕ СИМУЛЯЦИИ =====
+let history = [];
+let simTime = 0;
 let isCurrentOn = false;
+let flashUntil = 0;
 
-ampSlider.addEventListener('input', () => {
-  ampVal.textContent = parseFloat(ampSlider.value).toFixed(1) + ' мкА/см²';
+// Параметры времени
+let dt = 0.01; // Базовый шаг
+const TIME_SCALE = 8;
+let tMax = 100;
+
+// ===== ФУНКЦИИ МОДЕЛЕЙ =====
+// Возвращает { dV, dOther } для одного шага
+function modelStep(modelKey, params, Iext) {
+  const p = { ...params }; // копия для изменений
+  let dV = 0, dOther = 0;
+
+  switch(modelKey) {
+    case 'lif': {
+      if (p.refractory > 0) {
+        p.refractory -= dt;
+        return { dV: 0, dOther: 0, overrideV: p.V_reset };
+      }
+      dV = (-(p.V - p.V_reset) + p.R * Iext) / p.tau_m;
+      p.V += dV * dt;
+      if (p.V >= p.V_th) {
+        p.V = p.V_reset;
+        p.refractory = 2; // 2 мс рефрактерности
+      }
+      return { dV: 0, dOther: 0, overrideV: p.V }; // V обновлен внутри
+    }
+    case 'hh': {
+      const alphaM = (v) => 0.1 * (v + 40) / (1 - Math.exp(-(v + 40) / 10));
+      const betaM  = (v) => 4.0 * Math.exp(-(v + 65) / 18);
+      const alphaH = (v) => 0.07 * Math.exp(-(v + 65) / 20);
+      const betaH  = (v) => 1.0 / (1 + Math.exp(-(v + 35) / 10));
+      const alphaN = (v) => 0.01 * (v + 55) / (1 - Math.exp(-(v + 55) / 10));
+      const betaN  = (v) => 0.125 * Math.exp(-(v + 65) / 80);
+
+      const INa = p.gNa * p.m**3 * p.h * (p.V - p.ENa);
+      const IK  = p.gK * p.n**4 * (p.V - p.EK);
+      const IL  = p.gL * (p.V - p.EL);
+      dV = (Iext - INa - IK - IL) / p.Cm;
+      
+      const dm = alphaM(p.V)*(1-p.m) - betaM(p.V)*p.m;
+      const dh = alphaH(p.V)*(1-p.h) - betaH(p.V)*p.h;
+      const dn = alphaN(p.V)*(1-p.n) - betaN(p.V)*p.n;
+      
+      p.V += dV * dt;
+      p.m += dm * dt; p.h += dh * dt; p.n += dn * dt;
+      return { dV: 0, dOther: 0, overrideV: p.V, overrideM: p.m, overrideH: p.h, overrideN: p.n };
+    }
+    case 'izh': {
+      const dv = 0.04 * p.V**2 + 5 * p.V + 140 - p.u + Iext;
+      const du = p.a * (p.b * p.V - p.u);
+      p.V += dv * dt;
+      p.u += du * dt;
+      if (p.V >= 30) {
+        p.V = p.c;
+        p.u += p.d;
+      }
+      return { dV: 0, dOther: 0, overrideV: p.V, overrideU: p.u };
+    }
+    case 'ml': {
+      const m_inf = 0.5 * (1 + Math.tanh((p.V - p.V1) / p.V2));
+      const w_inf = 0.5 * (1 + Math.tanh((p.V - p.V3) / p.V4));
+      const tau_w = 1 / Math.cosh((p.V - p.V3) / (2 * p.V4));
+      
+      const ICa = p.gCa * m_inf * (p.V - p.VCa);
+      const IK  = p.gK * p.w * (p.V - p.VK);
+      const IL  = p.gL * (p.V - p.VL);
+      const dV = (Iext - ICa - IK - IL) / p.C;
+      const dw = p.phi * (w_inf - p.w) / tau_w;
+      
+      p.V += dV * dt;
+      p.w += dw * dt;
+      return { dV: 0, dOther: 0, overrideV: p.V, overrideW: p.w };
+    }
+    case 'fh': {
+      const dV = p.V - p.V**3 / 3 - p.w + Iext;
+      const dw = (p.V + p.a - p.b * p.w) / p.tau;
+      p.V += dV * dt;
+      p.w += dw * dt;
+      return { dV: 0, dOther: 0, overrideV: p.V, overrideW: p.w };
+    }
+    case 'hr': {
+      const dx = p.y - p.a * p.x**3 + p.b * p.x**2 - p.z + Iext;
+      const dy = p.c - p.d * p.x**2 - p.y;
+      const dz = p.r * (p.s * (p.x - p.x_R) - p.z);
+      p.x += dx * dt;
+      p.y += dy * dt;
+      p.z += dz * dt;
+      // Для HR V обычно ассоциируют с x, но масштаб другой. 
+      // Для отображения на графике умножим на 10 или сдвинем.
+      // Оставим как есть, но в readout покажем x.
+      return { dV: 0, dOther: 0, overrideV: p.x, overrideY: p.y, overrideZ: p.z };
+    }
+  }
+  return {};
+}
+
+// Сброс состояния при смене модели
+function resetModelState() {
+  const p = currentModel.params;
+  // Сброс в начальные значения (можно взять из MODELS)
+  const initial = MODELS[currentModelKey].params;
+  for (let key in initial) {
+    p[key] = initial[key];
+  }
+  history = [];
+  simTime = 0;
+  flashUntil = 0;
+  // Очистка графиков
+  ctxV.clearRect(0, 0, WV, HV);
+  ctxI.clearRect(0, 0, WI, HI);
+  draw();
+}
+
+// ===== UI ОБНОВЛЕНИЕ =====
+function updateUIForModel() {
+  modelTitle.textContent = currentModel.title;
+  
+  // Инфо-панель
+  const info = currentModel.info;
+  infoPanel.innerHTML = `
+    <h3>${currentModel.title}</h3>
+    <div class="paper-ref">📄 ${info.paper}</div>
+    <p><strong>Уравнения:</strong></p>
+    <div class="equations">${info.equations}</div>
+    <div class="feature">
+      <strong>Отличительная особенность:</strong>
+      <p>${info.feature}</p>
+    </div>
+  `;
+
+  // Настройка ползунка под модель (примерные диапазоны)
+  if (currentModelKey === 'hh' || currentModelKey === 'ml' || currentModelKey === 'hr') {
+    ampSlider.min = 0; ampSlider.max = 50; ampSlider.value = 10;
+  } else if (currentModelKey === 'izh') {
+    ampSlider.min = 0; ampSlider.max = 20; ampSlider.value = 10;
+  } else if (currentModelKey === 'lif') {
+    ampSlider.min = 0; ampSlider.max = 30; ampSlider.value = 15;
+  } else if (currentModelKey === 'fh') {
+    ampSlider.min = -1; ampSlider.max = 2; ampSlider.step = 0.01; ampSlider.value = 0.5;
+  }
+  ampVal.textContent = ampSlider.value;
+}
+
+// Переключение модели
+document.querySelectorAll('.model-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    
+    currentModelKey = e.target.dataset.model;
+    currentModel = MODELS[currentModelKey];
+    
+    // Восстановим шаг для ползунка
+    ampSlider.step = (currentModelKey === 'fh') ? 0.01 : 1;
+    
+    resetModelState();
+    updateUIForModel();
+  });
 });
 
-currentBtn.addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  isCurrentOn = true;
-  currentBtn.classList.add('active');
-});
-window.addEventListener('pointerup', () => {
-  isCurrentOn = false;
-  currentBtn.classList.remove('active');
-});
-window.addEventListener('pointercancel', () => {
-  isCurrentOn = false;
-  currentBtn.classList.remove('active');
-});
-
-// ===== Генератор рисунка нейрона =====
+// ===== НЕЙРОН (статичный) =====
+// (Используем тот же код, что и в прошлой версии, для краткости опустим детали генерации, 
+// так как фокус на моделях. Но нейрон останется.)
 (function buildNeuron() {
   const gDen = document.getElementById('dendrites');
   const gAxon = document.getElementById('axon');
   if (!gDen || !gAxon) return;
-
   const SVG_NS = 'http://www.w3.org/2000/svg';
-  const somaX = 100, somaY = 80;
-  const somaRx = 30, somaRy = 24;
-
+  const somaX = 100, somaY = 80, somaRx = 30, somaRy = 24;
   let seed = 42;
-  function rand() {
-    seed = (seed * 1664525 + 1013904223) % 4294967296;
-    return seed / 4294967296;
-  }
+  function rand() { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }
   function randRange(a, b) { return a + (b - a) * rand(); }
-
   function drawBranch(g, x, y, ex, ey, cx1, cy1, cx2, cy2, width, cls) {
     const path = document.createElementNS(SVG_NS, 'path');
-    path.setAttribute('class', cls);
-    path.setAttribute('stroke-width', width.toFixed(2));
-    path.setAttribute('d',
-      `M ${x.toFixed(1)} ${y.toFixed(1)} ` +
-      `C ${cx1.toFixed(1)} ${cy1.toFixed(1)}, ` +
-        `${cx2.toFixed(1)} ${cy2.toFixed(1)}, ` +
-        `${ex.toFixed(1)} ${ey.toFixed(1)}`
-    );
+    path.setAttribute('class', cls); path.setAttribute('stroke-width', width.toFixed(2));
+    path.setAttribute('d', `M ${x.toFixed(1)} ${y.toFixed(1)} C ${cx1.toFixed(1)} ${cy1.toFixed(1)}, ${cx2.toFixed(1)} ${cy2.toFixed(1)}, ${ex.toFixed(1)} ${ey.toFixed(1)}`);
     g.appendChild(path);
   }
-
-  // === 1. Дендриты (звездчатые) ===
-  const denAngles = [
-    -Math.PI * 0.85, -Math.PI * 0.55, -Math.PI * 0.15,
-     Math.PI * 0.15,  Math.PI * 0.55,  Math.PI * 0.85
-  ];
-
+  const denAngles = [-Math.PI*0.85, -Math.PI*0.55, -Math.PI*0.15, Math.PI*0.15, Math.PI*0.55, Math.PI*0.85];
   function drawDendriteTree(x, y, angle, len, width, depth) {
     if (depth <= 0) return;
-
     const endAngle = angle + randRange(-0.2, 0.2);
-    const ex = x + Math.cos(endAngle) * len;
-    const ey = y + Math.sin(endAngle) * len;
-
-    const c1x = x + Math.cos(angle) * len * 0.4;
-    const c1y = y + Math.sin(angle) * len * 0.4;
-    const c2x = ex - Math.cos(endAngle) * len * 0.2;
-    const c2y = ey - Math.sin(endAngle) * len * 0.2;
-
-    drawBranch(gDen, x, y, ex, ey, c1x, c1y, c2x, c2y, width, 'neuron-dendrite');
-
-    const nChildren = depth > 1 ? 2 : 0;
-    for (let i = 0; i < nChildren; i++) {
-      const spread = randRange(0.3, 0.6) * (i === 0 ? -1 : 1);
-      drawDendriteTree(
-        ex, ey,
-        endAngle + spread,
-        len * randRange(0.6, 0.8),
-        width * 0.7,
-        depth - 1
-      );
-    }
+    const ex = x + Math.cos(endAngle) * len; const ey = y + Math.sin(endAngle) * len;
+    drawBranch(gDen, x, y, ex, ey, x+Math.cos(angle)*len*0.4, y+Math.sin(angle)*len*0.4, ex-Math.cos(endAngle)*len*0.2, ey-Math.sin(endAngle)*len*0.2, width, 'neuron-dendrite');
+    for (let i = 0; i < (depth>1?2:0); i++) drawDendriteTree(ex, ey, endAngle + randRange(0.3,0.6)*(i===0?-1:1), len*randRange(0.6,0.8), width*0.7, depth-1);
   }
-
-  denAngles.forEach(angle => {
-    const sx = somaX + Math.cos(angle) * somaRx * 0.8;
-    const sy = somaY + Math.sin(angle) * somaRy * 0.8;
-    drawDendriteTree(sx, sy, angle, 22, 2.0, 3);
-  });
-
-  // === 2. Аксон (длинный, горизонтальный) ===
-  const aX1 = somaX + somaRx * 0.9;
-  const aY1 = somaY;
-  const aX2 = 220;
-  const aY2 = somaY + 5;
-  const aX3 = 290;
-  const aY3 = somaY;
-
-  drawBranch(gAxon, aX1, aY1, aX2, aY2, 
-    aX1 + 30, aY1 + 2, aX2 - 20, aY2 - 2, 4.0, 'neuron-axon');
+  denAngles.forEach(a => drawDendriteTree(somaX+Math.cos(a)*somaRx*0.8, somaY+Math.sin(a)*somaRy*0.8, a, 22, 2.0, 3));
   
-  drawBranch(gAxon, aX2, aY2, aX3, aY3,
-    aX2 + 20, aY2 + 2, aX3 - 20, aY3 - 2, 3.5, 'neuron-axon');
-
+  const aX1 = somaX + somaRx*0.9, aY1 = somaY, aX2 = 220, aY2 = somaY + 5, aX3 = 290, aY3 = somaY;
+  drawBranch(gAxon, aX1, aY1, aX2, aY2, aX1+30, aY1+2, aX2-20, aY2-2, 4.0, 'neuron-axon');
+  drawBranch(gAxon, aX2, aY2, aX3, aY3, aX2+20, aY2+2, aX3-20, aY3-2, 3.5, 'neuron-axon');
   function drawAxonTerminal(x, y, angle, len, width, depth) {
     if (depth <= 0) return;
-
     const endAngle = angle + randRange(-0.25, 0.25);
-    const ex = x + Math.cos(endAngle) * len;
-    const ey = y + Math.sin(endAngle) * len;
-
-    const c1x = x + Math.cos(angle) * len * 0.5;
-    const c1y = y + Math.sin(angle) * len * 0.5;
-    const c2x = ex - Math.cos(endAngle) * len * 0.2;
-    const c2y = ey - Math.sin(endAngle) * len * 0.2;
-
-    drawBranch(gAxon, x, y, ex, ey, c1x, c1y, c2x, c2y, width, 'neuron-axon');
-
+    const ex = x + Math.cos(endAngle) * len; const ey = y + Math.sin(endAngle) * len;
+    drawBranch(gAxon, x, y, ex, ey, x+Math.cos(angle)*len*0.5, y+Math.sin(angle)*len*0.5, ex-Math.cos(endAngle)*len*0.2, ey-Math.sin(endAngle)*len*0.2, width, 'neuron-axon');
     if (depth === 1) {
       const c = document.createElementNS(SVG_NS, 'circle');
-      c.setAttribute('class', 'synapse');
-      c.setAttribute('cx', ex.toFixed(1));
-      c.setAttribute('cy', ey.toFixed(1));
-      c.setAttribute('r', '2.5');
+      c.setAttribute('class', 'synapse'); c.setAttribute('cx', ex.toFixed(1)); c.setAttribute('cy', ey.toFixed(1)); c.setAttribute('r', '2.5');
       gAxon.appendChild(c);
     }
-
-    const nChildren = depth > 1 ? 2 : 0;
-    for (let i = 0; i < nChildren; i++) {
-      const spread = randRange(0.2, 0.45) * (i === 0 ? -1 : 1);
-      drawAxonTerminal(
-        ex, ey,
-        endAngle + spread,
-        len * randRange(0.65, 0.8),
-        width * 0.7,
-        depth - 1
-      );
-    }
+    for (let i = 0; i < (depth>1?2:0); i++) drawAxonTerminal(ex, ey, endAngle + randRange(0.2,0.45)*(i===0?-1:1), len*randRange(0.65,0.8), width*0.7, depth-1);
   }
-
   drawAxonTerminal(aX3, aY3, -0.15, 28, 2.5, 3);
   drawAxonTerminal(aX3, aY3, 0.0, 32, 2.5, 3);
   drawAxonTerminal(aX3, aY3, 0.15, 28, 2.5, 3);
 })();
 
-// ===== Один шаг модели =====
-function step() {
-  const Iext = isCurrentOn ? parseFloat(ampSlider.value) : 0;
-
-  const INa = gNa * m * m * m * h * (V - ENa);
-  const IK  = gK  * n * n * n * n * (V - EK);
-  const IL  = gL  * (V - EL);
-
-  const dV = (Iext - INa - IK - IL) / Cm;
-  const dm = alphaM(V) * (1 - m) - betaM(V) * m;
-  const dh = alphaH(V) * (1 - h) - betaH(V) * h;
-  const dn = alphaN(V) * (1 - n) - betaN(V) * n;
-
-  const Vprev = V;
-  V += dV * dt;
-  m += dm * dt;
-  h += dh * dt;
-  n += dn * dt;
-
-  if (Vprev < THRESHOLD && V >= THRESHOLD) {
-    flashUntil = performance.now() + FLASH_MS;
-  }
-
-  return Iext;
-}
-
-// ===== Отрисовка =====
-const canvasV = document.getElementById('plotV');
-const canvasI = document.getElementById('plotI');
-const ctxV = canvasV.getContext('2d');
-const ctxI = canvasI.getContext('2d');
-
-const WV = canvasV.width, HV = canvasV.height;
-const WI = canvasI.width, HI = canvasI.height;
-const padL = 50, padR = 15, padT = 15, padB = 30;
-const Vmin = -90, Vmax = 50;
-const Imax = 15;
-
-function xToPx(t, W) { return padL + (t / tMax) * (W - padL - padR); }
-function vToPy(v, H) { return padT + (1 - (v - Vmin) / (Vmax - Vmin)) * (H - padT - padB); }
-function iToPy(i, H) { return padT + (1 - i / Imax) * (H - padT - padB); }
-
-function niceStep(range, target) {
-  const raw = range / target;
-  const steps = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000];
-  return steps.find(s => s >= raw) || steps[steps.length - 1];
-}
-
+// ===== ОТРИСОВКА ГРАФИКОВ =====
 function draw() {
-  // ===== Верхний график: V(t) =====
-  ctxV.clearRect(0, 0, WV, HV);
+  // Очистка
+  ctxV.clearRect(0, 0, WV, HV); ctxI.clearRect(0, 0, WI, HI);
+  
+  // Для разных моделей разные диапазоны V
+  let Vmin = -90, Vmax = 50;
+  if (currentModelKey === 'izh') { Vmin = -90; Vmax = 40; }
+  if (currentModelKey === 'fh') { Vmin = -3; Vmax = 3; }
+  if (currentModelKey === 'hr') { Vmin = -3; Vmax = 4; }
+  if (currentModelKey === 'lif') { Vmin = -80; Vmax = -40; }
 
-  ctxV.font = '12px system-ui';
-  ctxV.textAlign = 'right';
-  const stepV = niceStep(Vmax - Vmin, 7);
-  for (let v = Vmin; v <= Vmax + 1e-9; v += stepV) {
-    const y = vToPy(v, HV);
-    ctxV.strokeStyle = '#1a2136';
-    ctxV.beginPath();
-    ctxV.moveTo(padL, y);
-    ctxV.lineTo(WV - padR, y);
-    ctxV.stroke();
-    ctxV.fillStyle = '#7a89a8';
-    ctxV.fillText(v, padL - 8, y + 4);
-  }
-
-  if (THRESHOLD > Vmin && THRESHOLD < Vmax) {
-    const yTh = vToPy(THRESHOLD, HV);
-    ctxV.strokeStyle = 'rgba(255, 183, 77, 0.45)';
-    ctxV.setLineDash([5, 5]);
-    ctxV.beginPath();
-    ctxV.moveTo(padL, yTh);
-    ctxV.lineTo(WV - padR, yTh);
-    ctxV.stroke();
-    ctxV.setLineDash([]);
-  }
-
-  ctxV.strokeStyle = '#2a3550';
-  ctxV.beginPath();
-  ctxV.moveTo(padL, padT);
-  ctxV.lineTo(padL, HV - padB);
-  ctxV.lineTo(WV - padR, HV - padB);
-  ctxV.stroke();
-
-  ctxV.textAlign = 'center';
-  ctxV.fillStyle = '#7a89a8';
-  const stepT = niceStep(tMax, 7);
-  for (let t = 0; t <= tMax + 1e-9; t += stepT) {
-    const x = xToPx(t, WV);
-    ctxV.strokeStyle = '#1a2136';
-    ctxV.beginPath();
-    ctxV.moveTo(x, padT);
-    ctxV.lineTo(x, HV - padB);
-    ctxV.stroke();
-  }
-
-  ctxV.textAlign = 'left';
-  ctxV.fillStyle = '#7a89a8';
-  ctxV.fillText('V (мВ)', padL - 40, padT - 2);
-
-  if (history.length > 1) {
-    ctxV.strokeStyle = '#7fd4ff';
-    ctxV.lineWidth = 2;
-    ctxV.lineJoin = 'round';
-    ctxV.beginPath();
-    const t0 = simTime - tMax;
-    let started = false;
-    for (let i = 0; i < history.length; i++) {
-      const p = history[i];
-      if (p.t < t0) continue;
-      const x = xToPx(p.t - t0, WV);
-      const y = vToPy(p.V, HV);
-      if (!started) { ctxV.moveTo(x, y); started = true; }
-      else ctxV.lineTo(x, y);
-    }
-    ctxV.stroke();
-  }
-
-  // ===== Нижний график: I(t) =====
-  ctxI.clearRect(0, 0, WI, HI);
-
-  ctxI.font = '12px system-ui';
-  ctxI.textAlign = 'right';
-  const stepI = niceStep(Imax, 4);
-  for (let i = 0; i <= Imax + 1e-9; i += stepI) {
-    const y = iToPy(i, HI);
-    ctxI.strokeStyle = '#1a2136';
-    ctxI.beginPath();
-    ctxI.moveTo(padL, y);
-    ctxI.lineTo(WI - padR, y);
-    ctxI.stroke();
-    ctxI.fillStyle = '#7a89a8';
-    ctxI.fillText(i.toFixed(i < 10 ? 1 : 0), padL - 8, y + 4);
-  }
-
-  ctxI.strokeStyle = '#2a3550';
-  ctxI.beginPath();
-  ctxI.moveTo(padL, padT);
-  ctxI.lineTo(padL, HI - padB);
-  ctxI.lineTo(WI - padR, HI - padB);
-  ctxI.stroke();
-
-  ctxI.textAlign = 'center';
-  ctxI.fillStyle = '#7a89a8';
-  for (let t = 0; t <= tMax + 1e-9; t += stepT) {
-    const x = xToPx(t, WI);
-    ctxI.strokeStyle = '#2a3550';
-    ctxI.beginPath();
-    ctxI.moveTo(x, HI - padB);
-    ctxI.lineTo(x, HI - padB + 4);
-    ctxI.stroke();
-    ctxI.fillText(t, x, HI - padB + 16);
-  }
-
-  ctxI.textAlign = 'left';
-  ctxI.fillStyle = '#7a89a8';
-  ctxI.fillText('I (мкА/см²)', padL - 42, padT - 2);
-  ctxI.textAlign = 'right';
-  ctxI.fillText('t (мс)', WI - padR, HI - 4);
-
-  if (history.length > 1) {
-    ctxI.strokeStyle = '#ffb74d';
-    ctxI.lineWidth = 2;
-    ctxI.lineJoin = 'round';
-    ctxI.beginPath();
-    const t0 = simTime - tMax;
-    let started = false;
-    for (let i = 0; i < history.length; i++) {
-      const p = history[i];
-      if (p.t < t0) continue;
-      const x = xToPx(p.t - t0, WI);
-      const y = iToPy(p.I, HI);
-      if (!started) { ctxI.moveTo(x, y); started = true; }
-      else ctxI.lineTo(x, y);
-    }
-    ctxI.stroke();
-  }
-}
-
-// ===== Главный цикл =====
-const stepsPerMsReal = TIME_SCALE / dt / 1000;
-let accumMs = 0;
-let lastRealTime = performance.now();
-
-function loop(now) {
-  const realDtMs = Math.min(now - lastRealTime, 100);
-  lastRealTime = now;
-  accumMs += realDtMs;
-
-  let steps = Math.floor(accumMs * stepsPerMsReal);
-  accumMs -= steps * (1 / stepsPerMsReal);
-  if (steps < 0) steps = 0;
-  steps = Math.min(steps, 2000);
-
-  let lastI = 0;
-  for (let i = 0; i < steps; i++) {
-    lastI = step();
-    simTime += dt;
-    history.push({ t: simTime, V: V, I: lastI });
-  }
-
-  const cutoff = simTime - tMax;
-  let drop = 0;
-  while (drop < history.length && history[drop].t < cutoff) drop++;
-  if (drop > 0) history.splice(0, drop);
-
-  if (now < flashUntil) neuronWrap.classList.add('firing');
-  else neuronWrap.classList.remove('firing');
-
-  vNowEl.textContent = V.toFixed(1);
-  iNowEl.textContent = (isCurrentOn ? parseFloat(ampSlider.value) : 0).toFixed(1);
-  tNowEl.textContent = simTime.toFixed(0);
-
-  draw();
-  requestAnimationFrame(loop);
-}
-
-requestAnimationFrame(loop);
-</script>
-
-</body>
-</html>
+  const vToPy = (v, H) => padT + (1 - (v - Vmin) / (Vmax - Vmin)) * (H - padT - padB);
+  const xToPx = (t, W) => padL + (t / tMax) * (W - pad
