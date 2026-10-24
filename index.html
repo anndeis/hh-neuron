@@ -142,12 +142,13 @@
   .neuron-wrap.firing .neuron-svg path { fill: #7fd4ff; }
 
   .plot-controls {
-    width: 100%;
+    width: 800px;
+    max-width: 100%;
     min-width: 0;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    min-width: 0;
   }
   canvas {
     background: #0a0e17;
@@ -282,10 +283,11 @@
     overflow: visible;
   }
   .neuron-svg {
-    transform: rotate(-18deg) !important;
+    transform: rotate(18deg) !important;
     transform-origin: center center;
   }
   @media (max-width: 850px) {
+    .plot-controls { width: 100%; }
     .neuron-wrap {
       position: fixed !important;
       left: -35px !important;
