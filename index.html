@@ -27,15 +27,15 @@
     background: var(--bg);
     color: var(--text);
     margin: 0;
-    padding: 20px;
+    padding: 12px;
     display: flex;
     justify-content: center;
     min-height: 100vh;
   }
   .app-container {
     display: flex;
-    gap: 20px;
-    max-width: 1600px;
+    gap: 14px;
+    max-width: 1800px;
     width: 100%;
     align-items: flex-start;
   }
@@ -87,83 +87,96 @@
 
   /* === Центральная часть === */
   .main-content {
-    flex-grow: 1;
+    flex: 1 1 auto;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 16px;
+    gap: 12px;
     min-width: 0;
   }
   h1 { font-size: 20px; font-weight: 500; margin: 0; text-align: center; }
 
-  /* === Нейрон === */
+  /* Графики занимают всю ширину; нейрон расположен отдельно внизу слева */
+  .simulation-layout {
+    position: relative;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding-bottom: 92px;
+  }
   .neuron-wrap {
-    padding: 12px;
-    background: var(--panel-bg);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    transition: box-shadow 0.15s, border-color 0.15s;
+    position: absolute;
+    left: 0;
+    bottom: 0;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
-    width: 424px;   /* 400 + 12*2 */
-    height: 224px;  /* 200 + 12*2 */
-    margin: 0 auto;
+    width: 180px;
+    height: 88px;
+    margin: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+    overflow: visible;
+    z-index: 2;
+    pointer-events: none;
   }
-  .neuron-wrap.firing {
-    box-shadow: 0 0 24px rgba(127, 212, 255, 0.55);
-    border-color: var(--accent);
-  }
-
   .neuron-svg {
     width: 100%;
     height: 100%;
     display: block;
     overflow: visible;
+    /* Положительный угол: дендритная часть слева выше, аксон справа ниже */
+    transform: rotate(13deg);
+    transform-origin: center;
     transition: filter 0.15s;
   }
-
-  /* Цвет путей (potrace делает всё чёрным, перекрашиваем) */
   .neuron-svg path {
     fill: #5a6e9e;
     transition: fill 0.15s;
   }
-
-  /* Вспышка */
   .neuron-wrap.firing .neuron-svg {
-    filter: drop-shadow(0 0 10px #7fd4ff) drop-shadow(0 0 22px #7fd4ff);
+    filter: drop-shadow(0 0 8px #7fd4ff) drop-shadow(0 0 18px #7fd4ff);
   }
-  .neuron-wrap.firing .neuron-svg path {
-    fill: #7fd4ff;
-  }
+  .neuron-wrap.firing .neuron-svg path { fill: #7fd4ff; }
 
-  /* === Графики === */
+  .plot-controls {
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
   canvas {
     background: #0a0e17;
     border: 1px solid var(--border);
     border-radius: 8px;
     display: block;
+    width: 100%;
+    height: auto;
   }
   #plotV { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: none; }
   #plotI { border-top-left-radius: 0; border-top-right-radius: 0; }
 
-  .readout { font-size: 14px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  .readout { font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; text-align: center; }
   .readout b { color: var(--accent); font-weight: 600; }
 
   .controls {
-    display: flex; align-items: center; gap: 20px; flex-wrap: wrap; justify-content: center;
-    background: var(--panel-bg); padding: 12px 24px; border-radius: 12px; border: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between;
+    background: var(--panel-bg); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
   }
-  .slider-group { display: flex; align-items: center; gap: 10px; }
-  input[type=range] { width: 200px; accent-color: var(--accent); }
+  .slider-group { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  input[type=range] { width: clamp(80px, 12vw, 200px); accent-color: var(--accent); }
   #currentBtn {
-    padding: 10px 28px; font-size: 16px; font-weight: 600; border: none; border-radius: 8px;
+    padding: 9px 16px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px;
     background: var(--accent-dark); color: #fff; cursor: pointer; user-select: none;
     transition: background 0.15s;
   }
   #currentBtn.active { background: var(--danger); }
   #currentBtn:active { transform: translateY(1px); }
-  .value { font-variant-numeric: tabular-nums; min-width: 60px; text-align: right; color: var(--accent); }
+  .value { font-variant-numeric: tabular-nums; min-width: 34px; text-align: right; color: var(--accent); }
 
   /* === Правая панель справки === */
   .info-panel {
@@ -229,6 +242,30 @@
   .info-panel .limitations { background: rgba(255, 190, 100, 0.045); border-color: rgba(255, 190, 100, 0.16); }
   .info-panel .limitations h4 { color: #ffd08a; }
   .info-panel p { margin: 8px 0; color: #c0cce0; }
+
+  @media (max-width: 1150px) {
+    body { padding: 8px; }
+    .app-container { gap: 10px; }
+    .sidebar { width: 170px; padding: 10px; }
+    .info-panel { width: 270px; padding: 14px; }
+    .controls { gap: 8px; padding: 8px; }
+  }
+  @media (max-width: 850px) {
+    .app-container { flex-wrap: wrap; }
+    .sidebar { width: 100%; position: static; flex-direction: row; flex-wrap: wrap; align-items: center; }
+    .sidebar h2 { width: 100%; margin-bottom: 2px; }
+    .main-content { flex-basis: 60%; }
+    .info-panel { flex: 1 1 100%; width: 100%; max-height: none; position: static; }
+  }
+  @media (max-width: 560px) {
+    .simulation-layout { padding-bottom: 68px; }
+    .neuron-wrap { width: 135px; height: 64px; }
+    .controls { align-items: stretch; }
+    .slider-group { flex-wrap: wrap; }
+    input[type=range] { width: 100%; }
+    #currentBtn { width: 100%; }
+    .main-content { flex-basis: 100%; }
+  }
 </style>
 </head>
 <body>
@@ -247,7 +284,8 @@
   <div class="main-content">
     <h1 id="modelTitle">Модель LIF</h1>
 
-    <div class="neuron-wrap" id="neuronWrap">
+    <div class="simulation-layout">
+      <div class="neuron-wrap" id="neuronWrap">
       <!-- ВАШ SVG (potrace) -->
       <svg class="neuron-svg" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
         <g transform="translate(0.000000,640.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
@@ -356,20 +394,22 @@ l34 -28 -41 -17 c-146 -58 -512 -71 -616 -22 -53 25 -129 103 -159 162 -73
 60 17 73 -16 25 -90 26 -134 3z"/>
         </g>
       </svg>
-    </div>
+      </div>
+      <div class="plot-controls">
+        <canvas id="plotV" width="800" height="280"></canvas>
+        <canvas id="plotI" width="800" height="100"></canvas>
 
-    <canvas id="plotV" width="800" height="280"></canvas>
-    <canvas id="plotI" width="800" height="100"></canvas>
+        <div class="readout"><span id="stateLabelNow">V</span> = <b id="vNow">-65.0</b> <span id="stateUnitNow">мВ</span> &nbsp;|&nbsp; I = <b id="iNow">0.0</b> <span id="currentUnitNow">нА</span> &nbsp;|&nbsp; t = <b id="tNow">0.0</b> <span id="timeUnitNow">мс</span></div>
 
-    <div class="readout"><span id="stateLabelNow">V</span> = <b id="vNow">-65.0</b> <span id="stateUnitNow">мВ</span> &nbsp;|&nbsp; I = <b id="iNow">0.0</b> <span id="currentUnitNow">нА</span> &nbsp;|&nbsp; t = <b id="tNow">0.0</b> <span id="timeUnitNow">мс</span></div>
-
-    <div class="controls">
+        <div class="controls">
       <div class="slider-group">
         <label for="amp">Стимул:</label>
         <input type="range" id="amp" min="0" max="100" step="1" value="10">
         <span class="value" id="ampVal">10</span>
       </div>
-      <button id="currentBtn" aria-pressed="false">ТОК: ВЫКЛ</button>
+          <button id="currentBtn" aria-pressed="false">ТОК: ВЫКЛ</button>
+        </div>
+      </div>
     </div>
   </div>
 
