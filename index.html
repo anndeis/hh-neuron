@@ -105,7 +105,7 @@
   }
   .neuron-wrap {
     position: absolute;
-    left: 0;
+    left: 24px;
     bottom: 0;
     display: flex;
     justify-content: flex-start;
@@ -165,13 +165,13 @@
   .readout b { color: var(--accent); font-weight: 600; }
 
   .controls {
-    display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between;
-    background: var(--panel-bg); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap; justify-content: center;
+    background: var(--panel-bg); padding: 12px 24px; border-radius: 12px; border: 1px solid var(--border);
   }
-  .slider-group { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  input[type=range] { width: clamp(80px, 12vw, 200px); accent-color: var(--accent); }
+  .slider-group { display: flex; align-items: center; gap: 10px; }
+  input[type=range] { width: 200px; accent-color: var(--accent); }
   #currentBtn {
-    padding: 9px 16px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px;
+    padding: 10px 28px; font-size: 16px; font-weight: 600; border: none; border-radius: 8px;
     background: var(--accent-dark); color: #fff; cursor: pointer; user-select: none;
     transition: background 0.15s;
   }
@@ -275,7 +275,7 @@
   }
   .neuron-wrap {
     position: fixed !important;
-    left: -8px !important;
+    left: 24px !important;
     bottom: 8px !important;
     width: 500px !important;
     height: 250px !important;
@@ -283,7 +283,7 @@
     overflow: visible;
   }
   .neuron-svg {
-    transform: rotate(18deg) !important;
+    transform: rotate(23deg) !important;
     transform-origin: center center;
   }
   @media (max-width: 850px) {
