@@ -266,6 +266,45 @@
     #currentBtn { width: 100%; }
     .main-content { flex-basis: 100%; }
   }
+
+  /* Итоговая компоновка: симуляция не резервирует место под иллюстрацию */
+  .simulation-layout {
+    padding-bottom: 0 !important;
+    overflow: visible;
+  }
+  .neuron-wrap {
+    position: fixed !important;
+    left: -8px !important;
+    bottom: 8px !important;
+    width: 500px !important;
+    height: 250px !important;
+    z-index: 1;
+    overflow: visible;
+  }
+  .neuron-svg {
+    transform: rotate(-18deg) !important;
+    transform-origin: center center;
+  }
+  @media (max-width: 850px) {
+    .neuron-wrap {
+      position: fixed !important;
+      left: -35px !important;
+      bottom: 4px !important;
+      width: 330px !important;
+      height: 165px !important;
+      opacity: 0.9;
+    }
+  }
+  @media (max-width: 560px) {
+    .neuron-wrap {
+      width: 210px !important;
+      height: 105px !important;
+      left: -45px !important;
+      bottom: 0 !important;
+      opacity: 0.65;
+    }
+  }
+
 </style>
 </head>
 <body>
