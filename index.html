@@ -475,7 +475,6 @@ const MODELS = {
     params: { V_rest: -65, V_th: -50, V_reset: -65, tau_m: 10, tau_refract: 2, R: 10 },
     stateLabel: 'V', stateUnit: 'mV', currentUnit: 'nA', timeUnit: 'ms',
     thresholdLine: { value: -50, label: 'Vₜₕ = −50 mV' },
-    // UPDATED LIF RANGE: from -70 to -40
     ranges: { amp: { min: 0, max: 15, step: 0.1, val: 2 }, V: [-70, -40] },
     info: {
       paper: 'Lapicque, L. (1907). Recherches quantitatives sur l\'excitation électrique des nerfs traitée comme une polarisation.',
@@ -498,7 +497,7 @@ const MODELS = {
     initial: { V: -65, m: 0.052932485, h: 0.5961207535, n: 0.317676914 },
     params: { Cm: 1, gNa: 120, gK: 36, gL: 0.3, ENa: 50, EK: -77, EL: -54.4 },
     stateLabel: 'V', stateUnit: 'mV', currentUnit: 'µA/cm²', timeUnit: 'ms',
-    ranges: { amp: { min: 0, max: 50, step: 1, val: 10 }, V: [-90, 50] },
+    ranges: { amp: { min: 0, max: 50, step: 1, val: 5 }, V: [-90, 50] },
     info: {
       paper: 'Hodgkin, A. L., & Huxley, A. F. (1952). A quantitative description of membrane current and its application to conduction and excitation in nerve. DOI: 10.1113/jphysiol.1952.sp004764.',
       equations: String.raw`\left\{\begin{array}{ll}
@@ -511,8 +510,8 @@ C_m \frac{dV}{dt} = I - g_{Na} m^3 h (V - E_{Na}) - g_K n^4 (V - E_K) - g_L (V -
       limitations: "The classical parameterization is strictly tied to a specific biological object (the giant squid axon) and cannot be directly transferred to mammalian neurons without additional parameter fitting. Furthermore, the high computational complexity (a system of four nonlinear differential equations) limits its application in large-scale network simulations compared to phenomenological models.",
       regimes: [
         "Rest: keep the current off — the membrane potential remains near the resting potential.",
-        "Excitation and single spike: turn on the current with a small amplitude. If the stimulus crosses the excitation threshold, an action potential will occur; with a weaker current, the response will remain subthreshold.",
-        "Repetitive spiking: turn on the current and gradually increase the amplitude. In a suitable range, a train of spikes will appear. At very strong stimulation, the dynamics may also change, so frequency should not be considered a linear function of current."
+        "Single spike: turn on the current with an amplitude of 5 µA/cm². The stimulus crosses the excitation threshold, generating a single action potential.",
+        "Repetitive spiking: increase the current amplitude further (e.g., above 10 µA/cm²). A train of spikes will appear. At very strong stimulation, the dynamics may also change, so frequency should not be considered a linear function of current."
       ]
     }
   },
@@ -591,7 +590,8 @@ w_\infty(V) = \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_3}{V_4}\right)\right] 
     initial: { x: -1.76627051, y: -14.59855758, z: -0.66508204 },
     params: { a: 1, b: 2.7, c: 1, d: 5, r: 0.01, s: 4, x_R: -1.6 },
     stateLabel: 'x', stateUnit: 'a.u.', currentUnit: 'a.u.', timeUnit: 'mod. units',
-    ranges: { amp: { min: 0, max: 5, step: 0.1, val: 4.0 }, V: [-3, 3] },
+    // UPDATED: default current set to 3
+    ranges: { amp: { min: 0, max: 5, step: 0.1, val: 3.0 }, V: [-3, 3] },
     info: {
       paper: 'Hindmarsh, J. L., & Rose, R. M. (1984). A model of neuronal bursting using three coupled first order differential equations. DOI: 10.1098/rspb.1984.0024.',
       equations: String.raw`\left\{\begin{array}{ll}
@@ -603,8 +603,7 @@ w_\infty(V) = \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_3}{V_4}\right)\right] 
       limitations: "In the original paper, the authors note that their model was developed as a generalization of the FitzHugh-Nagumo model to describe bursting and does not claim a direct biophysical interpretation of the variables x, y, and z. Reviews also indicate that the physical meaning of these variables in the model is not disclosed. The model is intended for a qualitative description of bursting dynamics and does not describe specific ion channels.",
       regimes: [
         "Bursting activity: keep the parameters as set and turn on the current with a value of 4. Look at a long graph window: groups of fast spikes separated by quiet intervals should be visible.",
-        "Regime change: after observing bursts, gradually vary the current within the slider range of 0–5. Depending on the value, one can transition to rest or another type of firing; the transition boundaries are not universal.",
-        "If bursts are not visible: ensure the current is on, wait several cycles, and do not shorten the time window. Bursts differ from regular spiking in that frequent spikes are grouped into clusters with noticeable pauses between them."
+        "Regime change: after observing bursts, gradually vary the current within the slider range of 0–5. Depending on the value, one can transition to rest or another type of firing; the transition boundaries are not universal."
       ]
     }
   }
