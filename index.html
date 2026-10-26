@@ -101,10 +101,12 @@
     width: 100%;
     min-width: 0;
   }
+  
+  /* UPDATED: Neuron positioned lower using top: calc */
   .neuron-wrap {
     position: fixed;
     left: 24px;
-    bottom: 8px;
+    top: calc(100vh - 200px); /* 66% вниз от верха окна */
     display: flex;
     justify-content: flex-start;
     align-items: center;
@@ -278,7 +280,7 @@
     .neuron-wrap {
       position: fixed;
       left: -35px;
-      bottom: 4px;
+      top: calc(100vh - 180px);
       width: 330px;
       height: 165px;
       opacity: 0.9;
@@ -291,7 +293,7 @@
       width: 210px;
       height: 105px;
       left: -45px;
-      bottom: 0;
+      top: calc(100vh - 130px);
       opacity: 0.65;
     }
     .controls { align-items: stretch; }
@@ -897,6 +899,95 @@ function draw() {
   }
 }
 
+// ===== MAIN LOOP =====
+const stepsPerMsReal = TIME_SCALE / dt / 1000;
+let accumMs = 0;
+let lastRealTime = performance.now();
+
+function loop(now) {
+  const realDtMs = Math.min(now - lastRealTime, 100);
+  lastRealTime = now;
+  accumMs += realDtMs;
+
+  let steps = Math.floor(accumMs * stepsPerMsReal);
+  accumMs -= steps * (1 / stepsPerMsReal);
+  steps = Math.min(steps, 2000);
+
+  const Iext = isCurrentOn ? parseFloat(ampSlider.value) : 0;
+  let lastI = Iext;
+
+  for (let i = 0; i < steps; i++) {
+    const didSpike = stepModel(Iext);
+    if (didSpike) flashUntil = now + 150;
+    simTime += dt;
+    history.push({ t: simTime, V: getDisplayV(), I: lastI });
+  }
+
+  const cutoff = simTime - tMax;
+  let drop = 0;
+  while (drop < history.length && history[drop].t < cutoff) drop++;
+  if (drop > 0) history.splice(0, drop);
+
+  if (now < flashUntil) neuronWrap.classList.add('firing');
+  else neuronWrap.classList.remove('firing');
+
+  vNowEl.textContent = getDisplayV().toFixed(1);
+  iNowEl.textContent = Iext.toFixed(1);
+  tNowEl.textContent = simTime.toFixed(1);
+
+  draw();
+  requestAnimationFrame(loop);
+}
+
+// ===== EVENTS =====
+document.querySelectorAll('.model-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    switchModel(e.target.dataset.model);
+  });
+});
+
+document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.preset-btn[data-preset]').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    currentIzhPreset = e.target.dataset.preset;
+    applyIzhPreset(currentIzhPreset);
+    vNowEl.textContent = getDisplayV().toFixed(1);
+  });
+});
+
+document.querySelectorAll('.preset-btn[data-ml-preset]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.preset-btn[data-ml-preset]').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    applyMLPreset(e.target.dataset.mlPreset);
+    vNowEl.textContent = getDisplayV().toFixed(1);
+  });
+});
+
+ampSlider.addEventListener('input', () => {
+  ampVal.textContent = parseFloat(ampSlider.value).toFixed(2).replace(/\.?0+$/, '');
+});
+
+function updateCurrentButton() {
+  currentBtn.classList.toggle('active', isCurrentOn);
+  currentBtn.setAttribute('aria-pressed', String(isCurrentOn));
+  currentBtn.textContent = isCurrentOn ? 'CURRENT: ON' : 'CURRENT: OFF';
+}
+
+currentBtn.addEventListener('click', () => {
+  isCurrentOn = !isCurrentOn;
+  updateCurrentButton();
+});
+
+switchModel('lif');
+requestAnimationFrame(loop);
+</script>
+
+</body>
+</html>
 // ===== MAIN LOOP =====
 const stepsPerMsReal = TIME_SCALE / dt / 1000;
 let accumMs = 0;
