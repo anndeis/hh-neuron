@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Симулятор нейронов: от LIF до Хиндмарша-Роуза</title>
+<title>Neuron Models Simulator: from LIF to Hindmarsh-Rose</title>
 <script>
   window.MathJax = {
     tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
@@ -40,7 +40,7 @@
     align-items: flex-start;
   }
 
-  /* === Левое меню === */
+  /* === Left Sidebar === */
   .sidebar {
     width: 220px;
     flex-shrink: 0;
@@ -85,7 +85,7 @@
     box-shadow: 0 0 10px rgba(127, 212, 255, 0.2);
   }
 
-  /* === Центральная часть === */
+  /* === Central Area === */
   .main-content {
     flex: 1 1 auto;
     display: flex;
@@ -95,23 +95,21 @@
   }
   h1 { font-size: 20px; font-weight: 500; margin: 0; text-align: center; }
 
-  /* Графики занимают всю ширину; нейрон расположен отдельно внизу слева */
   .simulation-layout {
     position: relative;
     display: block;
     width: 100%;
     min-width: 0;
-    padding-bottom: 92px;
   }
   .neuron-wrap {
-    position: absolute;
+    position: fixed;
     left: 24px;
-    bottom: 0;
+    bottom: 8px;
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    width: 180px;
-    height: 88px;
+    width: 500px;
+    height: 250px;
     margin: 0;
     background: transparent;
     border: none;
@@ -119,7 +117,7 @@
     padding: 0;
     box-shadow: none;
     overflow: visible;
-    z-index: 2;
+    z-index: 1;
     pointer-events: none;
   }
   .neuron-svg {
@@ -127,8 +125,7 @@
     height: 100%;
     display: block;
     overflow: visible;
-    /* Положительный угол: дендритная часть слева выше, аксон справа ниже */
-    transform: rotate(13deg);
+    transform: rotate(23deg);
     transform-origin: center;
     transition: filter 0.15s;
   }
@@ -179,7 +176,20 @@
   #currentBtn:active { transform: translateY(1px); }
   .value { font-variant-numeric: tabular-nums; min-width: 34px; text-align: right; color: var(--accent); }
 
-  /* === Правая панель справки === */
+  /* Preset Groups */
+  .preset-group {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    background: #0f1420; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
+  }
+  .preset-group label { font-size: 13px; color: var(--text-dim); margin-right: 4px; }
+  .preset-btn {
+    padding: 6px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border);
+    background: transparent; color: var(--text); cursor: pointer; transition: all 0.15s;
+  }
+  .preset-btn:hover { background: #1e2a45; border-color: var(--accent-dark); }
+  .preset-btn.active { background: var(--accent-dark); border-color: var(--accent); color: #fff; }
+
+  /* === Right Info Panel === */
   .info-panel {
     width: 340px;
     flex-shrink: 0;
@@ -212,6 +222,7 @@
     border-radius: 6px;
     border-left: 3px solid var(--accent);
   }
+  
   .info-panel .equations {
     background: #0a0e17;
     padding: 12px;
@@ -219,10 +230,17 @@
     overflow-x: auto;
     margin: 12px 0;
     color: #b8e8ff;
+    text-align: left;
   }
   .info-panel .equations mjx-container {
     color: #b8e8ff !important;
+    margin: 0 !important;
   }
+  .info-panel .equations mjx-container > svg {
+    display: block;
+    margin: 0 auto 0 0; 
+  }
+
   .info-panel .info-section {
     margin-top: 14px;
     padding: 12px;
@@ -257,80 +275,54 @@
     .sidebar h2 { width: 100%; margin-bottom: 2px; }
     .main-content { flex-basis: 60%; }
     .info-panel { flex: 1 1 100%; width: 100%; max-height: none; position: static; }
+    .neuron-wrap {
+      position: fixed;
+      left: -35px;
+      bottom: 4px;
+      width: 330px;
+      height: 165px;
+      opacity: 0.9;
+    }
+    .plot-controls { width: 100%; }
   }
   @media (max-width: 560px) {
     .simulation-layout { padding-bottom: 68px; }
-    .neuron-wrap { width: 135px; height: 64px; }
+    .neuron-wrap {
+      width: 210px;
+      height: 105px;
+      left: -45px;
+      bottom: 0;
+      opacity: 0.65;
+    }
     .controls { align-items: stretch; }
     .slider-group { flex-wrap: wrap; }
     input[type=range] { width: 100%; }
     #currentBtn { width: 100%; }
     .main-content { flex-basis: 100%; }
   }
-
-  /* Итоговая компоновка: симуляция не резервирует место под иллюстрацию */
-  .simulation-layout {
-    padding-bottom: 0 !important;
-    overflow: visible;
-  }
-  .neuron-wrap {
-    position: fixed !important;
-    left: 24px !important;
-    bottom: 8px !important;
-    width: 500px !important;
-    height: 250px !important;
-    z-index: 1;
-    overflow: visible;
-  }
-  .neuron-svg {
-    transform: rotate(23deg) !important;
-    transform-origin: center center;
-  }
-  @media (max-width: 850px) {
-    .plot-controls { width: 100%; }
-    .neuron-wrap {
-      position: fixed !important;
-      left: -35px !important;
-      bottom: 4px !important;
-      width: 330px !important;
-      height: 165px !important;
-      opacity: 0.9;
-    }
-  }
-  @media (max-width: 560px) {
-    .neuron-wrap {
-      width: 210px !important;
-      height: 105px !important;
-      left: -45px !important;
-      bottom: 0 !important;
-      opacity: 0.65;
-    }
-  }
-
 </style>
 </head>
 <body>
 
 <div class="app-container">
   <div class="sidebar">
-    <h2>Модели</h2>
+    <h2>Models</h2>
     <button class="model-btn active" data-model="lif">LIF</button>
-    <button class="model-btn" data-model="hh">Ходжкина-Хаксли</button>
-    <button class="model-btn" data-model="izh">Ижикевича</button>
-    <button class="model-btn" data-model="ml">Морриса-Лекара</button>
-    <button class="model-btn" data-model="fh">ФитцХью-Нагумо</button>
-    <button class="model-btn" data-model="hr">Хиндмарша-Роуза</button>
+    <button class="model-btn" data-model="hh">Hodgkin-Huxley</button>
+    <button class="model-btn" data-model="izh">Izhikevich</button>
+    <button class="model-btn" data-model="ml">Morris-Lecar</button>
+    <button class="model-btn" data-model="fh">FitzHugh-Nagumo</button>
+    <button class="model-btn" data-model="hr">Hindmarsh-Rose</button>
   </div>
 
   <div class="main-content">
-    <h1 id="modelTitle">Модель LIF</h1>
+    <h1 id="modelTitle">LIF Model</h1>
 
     <div class="simulation-layout">
       <div class="neuron-wrap" id="neuronWrap">
-      <!-- ВАШ SVG (potrace) -->
-      <svg class="neuron-svg" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-        <g transform="translate(0.000000,640.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
-          <path d="M12110 6111 c-64 -35 -79 -59 -86 -141 -4 -44 -16 -96 -29 -127 -43
+        <svg class="neuron-svg" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+          <g transform="translate(0.000000,640.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
+            <path d="M12110 6111 c-64 -35 -79 -59 -86 -141 -4 -44 -16 -96 -29 -127 -43
 -96 -248 -288 -460 -430 -177 -119 -632 -376 -648 -366 -13 8 -1 233 18 322
 38 180 112 303 216 357 16 8 80 22 141 30 109 15 168 34 168 54 0 22 -54 42
 -142 52 -142 16 -156 22 -184 92 -28 69 -49 96 -76 96 -23 0 -26 -7 -37 -109
@@ -433,22 +425,39 @@ l34 -28 -41 -17 c-146 -58 -512 -71 -616 -22 -53 25 -129 103 -159 162 -73
 274 741 381 173 61 247 100 243 128 -5 32 -51 31 -159 -3 -111 -36 -179 -48
 -179 -33 0 6 41 47 90 93 98 89 113 116 87 162 -22 38 -22 47 10 112 21 43 25
 60 17 73 -16 25 -90 26 -134 3z"/>
-        </g>
-      </svg>
+          </g>
+        </svg>
       </div>
       <div class="plot-controls">
         <canvas id="plotV" width="800" height="280"></canvas>
         <canvas id="plotI" width="800" height="100"></canvas>
 
-        <div class="readout"><span id="stateLabelNow">V</span> = <b id="vNow">-65.0</b> <span id="stateUnitNow">мВ</span> &nbsp;|&nbsp; I = <b id="iNow">0.0</b> <span id="currentUnitNow">нА</span> &nbsp;|&nbsp; t = <b id="tNow">0.0</b> <span id="timeUnitNow">мс</span></div>
+        <div class="readout"><span id="stateLabelNow">V</span> = <b id="vNow">-65.0</b> <span id="stateUnitNow">mV</span> &nbsp;|&nbsp; I = <b id="iNow">0.0</b> <span id="currentUnitNow">nA</span> &nbsp;|&nbsp; t = <b id="tNow">0.0</b> <span id="timeUnitNow">ms</span></div>
 
         <div class="controls">
-      <div class="slider-group">
-        <label for="amp">Стимул:</label>
-        <input type="range" id="amp" min="0" max="100" step="1" value="10">
-        <span class="value" id="ampVal">10</span>
-      </div>
-          <button id="currentBtn" aria-pressed="false">ТОК: ВЫКЛ</button>
+          <div class="slider-group">
+            <label for="amp">Stimulus:</label>
+            <input type="range" id="amp" min="0" max="100" step="1" value="10">
+            <span class="value" id="ampVal">10</span>
+          </div>
+          <button id="currentBtn" aria-pressed="false">CURRENT: OFF</button>
+        </div>
+
+        <!-- Izhikevich Presets -->
+        <div class="preset-group" id="presetGroup" style="display: none;">
+          <label>Neuron Type (Izhikevich 2003):</label>
+          <button class="preset-btn active" data-preset="RS">RS</button>
+          <button class="preset-btn" data-preset="IB">IB</button>
+          <button class="preset-btn" data-preset="CH">CH</button>
+          <button class="preset-btn" data-preset="FS">FS</button>
+          <button class="preset-btn" data-preset="LTS">LTS</button>
+        </div>
+
+        <!-- Morris-Lecar Presets -->
+        <div class="preset-group" id="mlPresetGroup" style="display: none;">
+          <label>Excitability Type:</label>
+          <button class="preset-btn active" data-ml-preset="type1">Type I (SNIC)</button>
+          <button class="preset-btn" data-ml-preset="type2">Type II (Hopf)</button>
         </div>
       </div>
     </div>
@@ -458,123 +467,162 @@ l34 -28 -41 -17 c-146 -58 -512 -71 -616 -22 -53 25 -129 103 -159 162 -73
 </div>
 
 <script>
-// ===== ДАННЫЕ МОДЕЛЕЙ =====
+// ===== MODEL DATA =====
 const MODELS = {
   lif: {
-    title: 'Модель LIF (Leaky Integrate-and-Fire)',
+    title: 'LIF Model (Leaky Integrate-and-Fire)',
     initial: { V: -65, refractory: 0 },
     params: { V_rest: -65, V_th: -50, V_reset: -65, tau_m: 10, tau_refract: 2, R: 10 },
-    stateLabel: 'V', stateUnit: 'мВ', currentUnit: 'нА', timeUnit: 'мс',
-    thresholdLine: { value: -50, label: 'Vₜₕ = −50 мВ' },
-    ranges: { amp: { min: 0, max: 30, step: 1, val: 2 }, V: [-80, -40] },
+    stateLabel: 'V', stateUnit: 'mV', currentUnit: 'nA', timeUnit: 'ms',
+    thresholdLine: { value: -50, label: 'Vₜₕ = −50 mV' },
+    // UPDATED LIF RANGE: from -70 to -40
+    ranges: { amp: { min: 0, max: 15, step: 0.1, val: 2 }, V: [-70, -40] },
     info: {
       paper: 'Lapicque, L. (1907). Recherches quantitatives sur l\'excitation électrique des nerfs traitée comme une polarisation.',
-      equations: String.raw`\left\{\begin{aligned}\tau_m \frac{dV}{dt} &= -(V - V_{rest}) + R I(t) \\ \text{при } V \ge V_{th}:\quad &V \leftarrow V_{reset} \\ \text{рефрактерный период:}\quad &V=V_{reset} \text{ в течение } \tau_{refract}\end{aligned}\right.`,
-      concept: "Мембрану представляют как конденсатор с утечкой: напряжение постепенно приближается к уровню покоя под действием тока. Когда достигается порог, модель регистрирует спайк и сбрасывает напряжение. Главное достоинство — простота и высокая скорость, поэтому LIF удобна для больших сетей и изучения времени спайков.",
-      limitations: "Потенциал действия не рассчитывается как реальная форма кривой: спайк заменён пороговым событием. Нет отдельных ионных каналов, адаптации и самостоятельного механизма пачечной активности. Результат зависит от выбранных порога, сброса и рефрактерного периода.",
+      equations: String.raw`\left\{\begin{array}{ll}
+\tau_m \frac{dV}{dt} = -(V - V_{rest}) + R I(t) & \\
+\text{when } V \ge V_{th}: & V \leftarrow V_{reset} \\
+\text{refractory period:} & V = V_{reset} \text{ for } \tau_{refract}
+\end{array}\right.`,
+      concept: "In 1907, Louis Lapicque proposed the LIF (Leaky Integrate-and-Fire) model, treating the cell membrane as an electrical capacitor. This allowed the description of charge accumulation and threshold excitation using a single linear differential equation. Due to its computational efficiency, the model is widely used in theoretical neuroscience to simulate the dynamics of large neural networks.",
+      limitations: "The model describes only the threshold event and does not reproduce the shape of the action potential, as it lacks variables for the dynamics of ionic conductances. Therefore, it is not intended for studying repolarization mechanisms, adaptation, or complex activity patterns (e.g., bursting), which require more detailed models.",
       regimes: [
-        "Подпороговый ответ: включи ток и поставь амплитуду ниже примерно 1.5 — напряжение приблизится к стационарному уровню, но спайков не будет.",
-        "Регулярные спайки: включи ток и подними амплитуду выше примерно 1.5. При постоянном токе появится последовательность одинаковых по форме спайков; с ростом тока частота обычно увеличивается.",
-        "Рефрактерная пауза: после каждого спайка напряжение принудительно удерживается на уровне сброса в течение заданного времени. Сложные пачки или адаптацию эта версия LIF не воспроизводит."
+        "Subthreshold response: turn on the current and set the amplitude below approximately 1.5. The voltage will approach a steady state, but no spikes will occur.",
+        "Regular spiking: turn on the current and increase the amplitude above approximately 1.5. With constant current, a sequence of identically shaped spikes will appear; with increasing current, the frequency usually increases.",
+        "Refractory pause: after each spike, the voltage is forced to the reset level for a specified time. Complex bursts or adaptation are not reproduced by this version of LIF."
       ]
     }
   },
   hh: {
-    title: 'Модель Ходжкина-Хаксли',
+    title: 'Hodgkin-Huxley Model',
     initial: { V: -65, m: 0.052932485, h: 0.5961207535, n: 0.317676914 },
     params: { Cm: 1, gNa: 120, gK: 36, gL: 0.3, ENa: 50, EK: -77, EL: -54.4 },
-    stateLabel: 'V', stateUnit: 'мВ', currentUnit: 'мкА/см²', timeUnit: 'мс', timeUnit: 'мс',
+    stateLabel: 'V', stateUnit: 'mV', currentUnit: 'µA/cm²', timeUnit: 'ms',
     ranges: { amp: { min: 0, max: 50, step: 1, val: 10 }, V: [-90, 50] },
     info: {
       paper: 'Hodgkin, A. L., & Huxley, A. F. (1952). A quantitative description of membrane current and its application to conduction and excitation in nerve. DOI: 10.1113/jphysiol.1952.sp004764.',
-      equations: String.raw`\left\{\begin{aligned}C_m \frac{dV}{dt} &= I - g_{Na} m^3 h (V - E_{Na}) - g_K n^4 (V - E_K) - g_L (V - E_L) \\ \frac{dm}{dt} &= \alpha_m(V)(1-m) - \beta_m(V)m \\ \frac{dh}{dt} &= \alpha_h(V)(1-h) - \beta_h(V)h \\ \frac{dn}{dt} &= \alpha_n(V)(1-n) - \beta_n(V)n\end{aligned}\right.`,
-      concept: "Модель связывает изменение мембранного потенциала с потоками натрия и калия и с током утечки. Переменные m, h и n описывают открывание и инактивацию каналов во времени. Её сильная сторона — биофизическая интерпретируемость: можно изучать, как конкретные ионные токи формируют потенциал действия.",
-      limitations: "Классическая параметризация получена для гигантского аксона кальмара и не переносится автоматически на другие нейроны. Модель сложнее феноменологических моделей, требует подбирать много параметров и сама по себе не описывает синапсы, дендритную морфологию или пластичность.",
+      equations: String.raw`\left\{\begin{array}{ll}
+C_m \frac{dV}{dt} = I - g_{Na} m^3 h (V - E_{Na}) - g_K n^4 (V - E_K) - g_L (V - E_L) & \\
+\frac{dm}{dt} = \alpha_m(V)(1-m) - \beta_m(V)m & \\
+\frac{dh}{dt} = \alpha_h(V)(1-h) - \beta_h(V)h & \\
+\frac{dn}{dt} = \alpha_n(V)(1-n) - \beta_n(V)n &
+\end{array}\right.`,
+      concept: "In 1952, A. Hodgkin and A. Huxley proposed the Hodgkin-Huxley model for the quantitative description of action potential generation, based on data from the giant squid axon. By measuring currents under voltage clamp, the authors predicted the mechanism of ion channels: they postulated independent sodium and potassium pathways, controlled by gating particles (m, h, n) whose kinetics depend on the membrane potential. The model was the first to link the nonlinear dynamics of these conductances to the shape of the electrical impulse, for which the authors were awarded the Nobel Prize.",
+      limitations: "The classical parameterization is strictly tied to a specific biological object (the giant squid axon) and cannot be directly transferred to mammalian neurons without additional parameter fitting. Furthermore, the high computational complexity (a system of four nonlinear differential equations) limits its application in large-scale network simulations compared to phenomenological models.",
       regimes: [
-        "Покой: оставь ток выключенным — мембранный потенциал остаётся около потенциала покоя.",
-        "Возбуждение и одиночный спайк: включи ток небольшой амплитуды. Если стимул пересекает порог возбудимости, возникнет потенциал действия; при более слабом токе ответ останется подпороговым.",
-        "Повторная генерация спайков: включи ток и постепенно увеличивай амплитуду ползунком. В подходящем диапазоне появится поезд спайков. При очень сильной стимуляции динамика тоже может изменяться, поэтому не стоит считать частоту линейной функцией тока."
+        "Rest: keep the current off — the membrane potential remains near the resting potential.",
+        "Excitation and single spike: turn on the current with a small amplitude. If the stimulus crosses the excitation threshold, an action potential will occur; with a weaker current, the response will remain subthreshold.",
+        "Repetitive spiking: turn on the current and gradually increase the amplitude. In a suitable range, a train of spikes will appear. At very strong stimulation, the dynamics may also change, so frequency should not be considered a linear function of current."
       ]
     }
   },
   izh: {
-    title: 'Модель Ижикевича',
+    title: 'Izhikevich Model',
     initial: { V: -70, u: -14 },
-    params: { a: 0.02, b: 0.2, c: -65, d: 2 },
-    stateLabel: 'v', stateUnit: 'мВ', currentUnit: 'усл. ед.', timeUnit: 'мс',
-    thresholdLine: { value: 30, label: 'v = 30 мВ' },
+    params: { a: 0.02, b: 0.2, c: -65, d: 8 },
+    stateLabel: 'v', stateUnit: 'mV', currentUnit: 'a.u.', timeUnit: 'ms',
+    thresholdLine: { value: 30, label: 'v = 30 mV' },
     ranges: { amp: { min: 0, max: 20, step: 1, val: 10 }, V: [-90, 40] },
     info: {
       paper: 'Izhikevich, E. M. (2003). Simple model of spiking neurons. IEEE Trans. Neural Networks, 14(6), 1569–1572. DOI: 10.1109/TNN.2003.820440.',
-      equations: String.raw`\left\{\begin{aligned}\frac{dv}{dt} &= 0.04v^2 + 5v + 140 - u + I \\ \frac{du}{dt} &= a(bv - u) \\ \text{при } v \ge 30\text{ мВ}:\quad &v \leftarrow c,\quad u \leftarrow u+d\end{aligned}\right.`,
-      concept: "Две переменные описывают напряжение и восстановительный процесс. Нелинейная зависимость dv/dt от напряжения позволяет получать спайки, а параметр u задаёт обратную связь, которая меняет форму и частоту разрядов. Модель вычислительно дешёвая, но способна воспроизводить широкий набор качественных типов активности.",
-      limitations: "Это феноменологическая модель: переменные не соответствуют напрямую концентрациям ионных каналов, а форма спайка задана приближённо. Разные режимы требуют разных параметров a, b, c и d; в этом интерфейсе они фиксированы, поэтому доступны не все типы активности, которые модель может воспроизводить в принципе.",
+      equations: String.raw`\left\{\begin{array}{ll}
+\frac{dv}{dt} = 0.04v^2 + 5v + 140 - u + I & \\
+\frac{du}{dt} = a(bv - u) & \\
+\text{when } v \ge 30\text{ mV}: & v \leftarrow c, \quad u \leftarrow u+d
+\end{array}\right.`,
+      concept: "In 2003, E. M. Izhikevich proposed the Izhikevich model as a compromise between the biophysical accuracy of the Hodgkin-Huxley model and the computational efficiency of the LIF model. Using a quadratic nonlinearity and a recovery variable, the model reproduces more than 20 neurobiological spike types while remaining compatible with the simulation of large networks in real time. The original paper provides specific parameter sets (a, b, c, d) corresponding to known types of cortical neurons.",
+      limitations: "The model is phenomenological: the variables do not directly correspond to ion channel concentrations, and the spike shape is approximated. Different regimes require different values of parameters a, b, c, and d; however, this implementation provides presets corresponding to the main neuron types from the original paper.",
       regimes: [
-        "Покой: выключи ток и наблюдай, как система остаётся около устойчивого состояния.",
-        "Регулярные спайки: включи ток с текущей настройкой около 10. На графике должны появиться повторяющиеся спайки; увеличение тока обычно меняет частоту и межспайковые интервалы.",
-        "Другие типы разрядов, включая адаптацию, пачки и быстрое чattering-подобное разряжение, возможны при других сочетаниях a, b, c и d. Ползунок тока сам по себе не гарантирует переход к ним — для их демонстрации нужны дополнительные пресеты параметров."
+        "**RS (Regular Spiking)** — `a = 0.02, b = 0.2, c = -65, d = 8`. Excitatory pyramidal neuron. When current is applied, it generates regular spikes, the frequency of which gradually decreases (spike frequency adaptation) due to the growth of the recovery variable u.",
+        "**IB (Intrinsically Bursting)** — `a = 0.02, b = 0.2, c = -55, d = 4`. Neuron with intrinsic bursting. In response to a current step, it produces an initial burst of 2–4 fast spikes, after which it transitions to more infrequent single spikes.",
+        "**CH (Chattering)** — `a = 0.02, b = 0.2, c = -50, d = 2`. Chattering neuron. Generates high-frequency bursts of 3–5 spikes with short pauses between them. On the graph, it appears as rhythmic 'flashes' of activity.",
+        "**FS (Fast Spiking)** — `a = 0.1, b = 0.2, c = -65, d = 2`. Fast-spiking interneuron. Due to the large `a`, the variable u follows v very quickly, which prevents adaptation. It produces high-frequency regular spikes without a decrease in frequency.",
+        "**LTS (Low-Threshold Spiking)** — `a = 0.02, b = 0.25, c = -65, d = 2`. Low-threshold spiking neuron. A higher `b` accelerates the accumulation of u and enhances adaptation. It produces single spikes with a noticeable increase in the inter-spike interval."
       ]
     }
   },
   ml: {
-    title: 'Модель Морриса-Лекара',
+    title: 'Morris-Lecar Model',
     initial: { V: -60.8553822323, w: 0.014915024954 },
     params: { C: 20, gCa: 4.4, gK: 8, gL: 2, VCa: 120, VK: -84, VL: -60, V1: -1.2, V2: 18, V3: 2, V4: 30, phi: 0.04 },
-    stateLabel: 'V', stateUnit: 'мВ', currentUnit: 'мкА/см²', timeUnit: 'мс',
+    stateLabel: 'V', stateUnit: 'mV', currentUnit: 'µA/cm²', timeUnit: 'ms',
     ranges: { amp: { min: 0, max: 200, step: 5, val: 100 }, V: [-80, 60] },
     info: {
       paper: 'Morris, C., & Lecar, H. (1981). Voltage oscillations in the barnacle giant muscle fiber. DOI: 10.1016/S0006-3495(81)84782-0.',
-      equations: String.raw`\left\{\begin{aligned}C \frac{dV}{dt} &= I - g_{Ca} m_\infty(V)(V - V_{Ca}) - g_K w (V - V_K) - g_L (V - V_L) \\ \frac{dw}{dt} &= \phi \, \frac{w_\infty(V) - w}{\tau_w(V)} \\ m_\infty(V) &= \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_1}{V_2}\right)\right] \\ w_\infty(V) &= \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_3}{V_4}\right)\right] \\ \tau_w(V) &= \frac{1}{\cosh\left(\frac{V - V_3}{2V_4}\right)}\end{aligned}\right.`,
-      concept: "Это сокращённая биофизическая модель: кальциевый ток быстро активируется в зависимости от напряжения, а переменная w описывает более медленную калиевую проводимость. Две переменные уже позволяют исследовать возбудимость и колебания, сохраняя связь с механизмами мембранных токов. Изначально модель описывала гигантское мышечное волокно усоногого рака.",
-      limitations: "В модели оставлены только два динамических состояния, а активация кальциевого тока считается мгновенной. Это упрощение не передаёт всю кинетику реальных каналов и не делает модель специфичной для корковых нейронов. Тип динамики чувствителен к параметрам и к тому, какой вариант модели используется.",
+      equations: String.raw`\left\{\begin{array}{ll}
+C \frac{dV}{dt} = I - g_{Ca} m_\infty(V)(V - V_{Ca}) - g_K w (V - V_K) - g_L (V - V_L) & \\
+\frac{dw}{dt} = \phi \, \frac{w_\infty(V) - w}{\tau_w(V)} & \\
+m_\infty(V) = \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_1}{V_2}\right)\right] & \\
+w_\infty(V) = \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_3}{V_4}\right)\right] & \\
+\tau_w(V) = \frac{1}{\cosh\left(\frac{V - V_3}{2V_4}\right)} &
+\end{array}\right.`,
+      concept: "In 1981, C. Morris and H. Lecar proposed the Morris-Lecar model to describe voltage oscillations in the giant muscle fiber of crustaceans. The novelty was the simplification of the biophysics: instead of the full Hodgkin-Huxley system, they used the assumption of instantaneous calcium current activation m∞(V), leaving only the slow potassium conductance w as a dynamic variable. This preserved the biological meaning of the currents but reduced the system dimension to two variables, making it a canonical model for phase analysis and bifurcation theory.",
+      limitations: "In the original paper, Morris and Lecar note that their model is a simplification intended to describe a specific experimental preparation—the giant muscle fiber of crustaceans. The assumption of instantaneous calcium current activation (m∞) was based on experimental data for this object and is not universal for all excitable cells. The model does not aim to describe the full kinetics of ion channels and does not account for, for example, calcium-dependent inactivation of potassium channels, which was suppressed with EGTA in the original experiment.",
       regimes: [
-        "Покой: выключи ток — напряжение должно оставаться около стационарного уровня.",
-        "Тоническая активность: включи ток и установи амплитуду около 100. Для выбранных здесь параметров ожидается повторяющаяся спайковая активность.",
-        "Порог перехода: медленно меняй ток от малых к большим значениям и следи, когда покой сменяется колебаниями. Вблизи перехода возможны разные типы начала колебаний; точная картина зависит от параметров, а не только от названия модели."
+        "Rest: turn off the current — the voltage should remain near the steady-state level.",
+        "Tonic activity: turn on the current and set the amplitude around 100. For the parameters chosen here, repetitive spiking activity is expected.",
+        "Transition threshold: slowly vary the current from low to high values and observe when rest transitions to oscillations. Near the transition, different types of oscillation onset may occur; the exact picture depends on the parameters, not just the model name."
       ]
     }
   },
   fh: {
-    title: 'Модель ФитцХью-Нагумо',
+    title: 'FitzHugh-Nagumo Model',
     initial: { V: -1.1994080352, w: -0.6242600441 },
     params: { a: 0.7, b: 0.8, tau: 12.5 },
-    stateLabel: 'v', stateUnit: 'безразм.', currentUnit: 'безразм.', timeUnit: 'усл. ед.',
+    stateLabel: 'v', stateUnit: 'a.u.', currentUnit: 'a.u.', timeUnit: 'a.u.',
     ranges: { amp: { min: -1, max: 2, step: 0.01, val: 0.5 }, V: [-3, 3] },
     info: {
       paper: 'FitzHugh, R. (1961). Impulses and physiological states in theoretical models of nerve membrane; Nagumo, Arimoto & Yoshizawa (1962). An active pulse transmission line simulating nerve axon. DOI: 10.1109/JRPROC.1962.288235.',
-      equations: String.raw`\left\{\begin{aligned}\frac{dV}{dt} &= V - \frac{V^3}{3} - w + I \\ \frac{dw}{dt} &= \frac{V + a - b w}{\tau}\end{aligned}\right.`,
-      concept: "Модель сводит динамику возбудимой мембраны к двум процессам: быстрой переменной V и более медленной переменной восстановления w. Кубическая нелинейность создаёт пороговый ответ, а восстановительная переменная помогает системе вернуться к покою. Это наглядная модель для понимания возбудимости без подробного описания ионных каналов.",
-      limitations: "V и w здесь безразмерны и не являются буквальными измерениями мембранного потенциала и конкретного тока. Форма импульса схематична, а ионные механизмы не разделены на отдельные каналы. Данная запись — распространённая безразмерная форма FitzHugh–Nagumo, а не единственная буквальная форма исходной статьи ФитцХью.",
+      equations: String.raw`\left\{\begin{array}{ll}
+\frac{dV}{dt} = V - \frac{V^3}{3} - w + I & \\
+\frac{dw}{dt} = \frac{V + a - b w}{\tau} &
+\end{array}\right.`,
+      concept: "In 1961, R. FitzHugh, and later J. Nagumo and colleagues in 1962, proposed the FitzHugh-Nagumo model as a mathematical reduction of complex biophysical excitation equations. By replacing the detailed dynamics of ionic conductances with a cubic nonlinearity and a single slow recovery variable, the model preserves the fundamental topological properties of an excitable system—threshold, refractoriness, and self-oscillations. Its value lies in allowing these dynamic regimes to be studied analytically and visualized on a phase plane, making it a classic tool in nonlinear dynamics.",
+      limitations: "FitzHugh emphasized that the purpose of the model was to create a qualitative 'caricature' of excitability, rather than an exact quantitative description of membrane currents. The variables in the equations have a vague physiological meaning and do not directly correspond to specific ionic mechanisms. The model is not intended for accurately reproducing the shape of the action potential or quantitative impulse characteristics; its strength lies in demonstrating the general dynamic properties of excitable systems.",
       regimes: [
-        "Устойчивый покой: выключи ток и посмотри, как система приходит к стационарному состоянию.",
-        "Возбудимый ответ: включи небольшой ток или кратко включи и выключи стимул. Если система пересекает порог, возникает большой импульс, после которого она восстанавливается.",
-        "Автоколебания: для текущих параметров попробуй включить ток около 0.5. На графике ожидаются повторяющиеся колебания; меняя ток, можно увидеть переход между покоем и колебательным режимом. В этой модели спайки не следует интерпретировать как реалистичные потенциалы действия в мВ."
+        "Stable rest: turn off the current and observe how the system reaches a steady state.",
+        "Excitable response: turn on a small current or briefly turn the stimulus on and off. If the system crosses the threshold, a large impulse occurs, after which it recovers.",
+        "Self-oscillations: for the current parameters, try turning on a current around 0.5. Repetitive oscillations are expected on the graph; by varying the current, one can observe the transition between rest and the oscillatory regime. In this model, spikes should not be interpreted as realistic action potentials in mV."
       ]
     }
   },
   hr: {
-    title: 'Модель Хиндмарша-Роуза',
+    title: 'Hindmarsh-Rose Model',
     initial: { x: -1.76627051, y: -14.59855758, z: -0.66508204 },
     params: { a: 1, b: 2.7, c: 1, d: 5, r: 0.01, s: 4, x_R: -1.6 },
-    stateLabel: 'x', stateUnit: 'безразм.', currentUnit: 'безразм.', timeUnit: 'мод. ед.',
-    ranges: { amp: { min: 0, max: 5, step: 0.1, val: 4.0 }, V: [-3, 4] },
+    stateLabel: 'x', stateUnit: 'a.u.', currentUnit: 'a.u.', timeUnit: 'mod. units',
+    ranges: { amp: { min: 0, max: 5, step: 0.1, val: 4.0 }, V: [-3, 3] },
     info: {
       paper: 'Hindmarsh, J. L., & Rose, R. M. (1984). A model of neuronal bursting using three coupled first order differential equations. DOI: 10.1098/rspb.1984.0024.',
-      equations: String.raw`\left\{\begin{aligned}\frac{dx}{dt} &= y - a x^3 + b x^2 - z + I \\ \frac{dy}{dt} &= c - d x^2 - y \\ \frac{dz}{dt} &= r \left[ s(x - x_R) - z \right]\end{aligned}\right.`,
-      concept: "Три переменные описывают быструю активность x, более быструю восстановительную переменную y и медленную переменную z. Медленная обратная связь способна переключать систему между активной фазой со множеством спайков и тихой фазой. Поэтому модель особенно полезна для изучения пачечной активности (bursting) и переходов между режимами.",
-      limitations: "Переменные и время безразмерны: x нельзя напрямую считать мембранным потенциалом в мВ. Модель не описывает отдельные ионные каналы и требует подбора параметров для нужного режима. Наличие пачек не гарантировано при любых параметрах и начальных условиях; при слишком коротком временном окне медленный цикл можно не заметить.",
+      equations: String.raw`\left\{\begin{array}{ll}
+\frac{dx}{dt} = y - a x^3 + b x^2 - z + I & \\
+\frac{dy}{dt} = c - d x^2 - y & \\
+\frac{dz}{dt} = r \left[ s(x - x_R) - z \right] &
+\end{array}\right.`,
+      concept: "In 1984, J. Hindmarsh and R. Rose proposed the Hindmarsh-Rose model to describe the phenomenon of bursting. The introduction of a third, slowest variable (adaptation current) generated dynamics with widely differing time scales (fast-slow dynamics). This allowed the mathematical description of complex transitions between the generation of spike trains and the resting state, which is critically important for studying central pattern generators (CPG) and endocrine cells.",
+      limitations: "In the original paper, the authors note that their model was developed as a generalization of the FitzHugh-Nagumo model to describe bursting and does not claim a direct biophysical interpretation of the variables x, y, and z. Reviews also indicate that the physical meaning of these variables in the model is not disclosed. The model is intended for a qualitative description of bursting dynamics and does not describe specific ion channels.",
       regimes: [
-        "Пачечная активность: оставь параметры как заданы и включи ток со значением 4. Смотри на длинное окно графика: должны быть видны группы быстрых спайков, разделённые тихими интервалами.",
-        "Изменение режима: после наблюдения пачек постепенно меняй ток в диапазоне ползунка 0–5. В зависимости от значения можно перейти к покою или другому типу разрядов; границы переходов не универсальны.",
-        "Если пачки не видны: убедись, что ток включён, подожди несколько циклов и не сокращай окно времени. Пачки отличаются от регулярного спайкинга тем, что частые спайки собраны в группы с заметными паузами между ними."
+        "Bursting activity: keep the parameters as set and turn on the current with a value of 4. Look at a long graph window: groups of fast spikes separated by quiet intervals should be visible.",
+        "Regime change: after observing bursts, gradually vary the current within the slider range of 0–5. Depending on the value, one can transition to rest or another type of firing; the transition boundaries are not universal.",
+        "If bursts are not visible: ensure the current is on, wait several cycles, and do not shorten the time window. Bursts differ from regular spiking in that frequent spikes are grouped into clusters with noticeable pauses between them."
       ]
     }
   }
 };
 
+// Izhikevich parameter presets from the 2003 paper (exact values)
+const IZH_PRESETS = {
+  RS:  { a: 0.02, b: 0.2,  c: -65, d: 8,  I_default: 10 },
+  IB:  { a: 0.02, b: 0.2,  c: -55, d: 4,  I_default: 10 },
+  CH:  { a: 0.02, b: 0.2,  c: -50, d: 2,  I_default: 10 },
+  FS:  { a: 0.1,  b: 0.2,  c: -65, d: 2,  I_default: 10 },
+  LTS: { a: 0.02, b: 0.25, c: -65, d: 2,  I_default: 10 }
+};
+
 let currentModelKey = 'lif';
 let currentState = {};
 let currentParams = {};
+let currentIzhPreset = 'RS';
 
 // ===== DOM =====
 const modelTitle = document.getElementById('modelTitle');
@@ -590,8 +638,9 @@ const stateUnitNowEl = document.getElementById('stateUnitNow');
 const currentUnitNowEl = document.getElementById('currentUnitNow');
 const timeUnitNowEl = document.getElementById('timeUnitNow');
 const neuronWrap = document.getElementById('neuronWrap');
+const presetGroup = document.getElementById('presetGroup');
 
-// ===== ГРАФИКИ =====
+// ===== CHARTS =====
 const canvasV = document.getElementById('plotV');
 const canvasI = document.getElementById('plotI');
 const ctxV = canvasV.getContext('2d');
@@ -608,9 +657,7 @@ let dt = 0.01;
 const TIME_SCALE = 25;
 let tMax = 100;
 
-// ===== МОДЕЛИ =====
-// Stable evaluation of x / (1 - exp(-x/y)); avoids 0/0 in the HH
-// alpha_m rate at V = -40 mV and alpha_n rate at V = -55 mV.
+// ===== MODEL FUNCTIONS =====
 function vtrap(x, y) {
   const q = x / y;
   if (Math.abs(q) < 1e-6) return y * (1 + q / 2);
@@ -688,21 +735,25 @@ function updateUIForModel() {
   stateUnitNowEl.textContent = m.stateUnit;
   currentUnitNowEl.textContent = m.currentUnit;
   timeUnitNowEl.textContent = m.timeUnit;
+  
+  presetGroup.style.display = (currentModelKey === 'izh') ? 'flex' : 'none';
+  document.getElementById('mlPresetGroup').style.display = (currentModelKey === 'ml') ? 'flex' : 'none';
+  
   infoPanel.innerHTML = `
     <h3>${m.title}</h3>
     <div class="paper-ref">📄 ${m.info.paper}</div>
-    <p><strong>Уравнения:</strong></p>
+    <p><strong>Equations:</strong></p>
     <div class="equations">$$${m.info.equations}$$</div>
     <section class="info-section">
-      <h4>1. Идея и сильные стороны</h4>
+      <h4>1. Concept and Strengths</h4>
       <p>${m.info.concept}</p>
     </section>
     <section class="info-section limitations">
-      <h4>2. Ограничения</h4>
+      <h4>2. Limitations</h4>
       <p>${m.info.limitations}</p>
     </section>
     <section class="info-section regimes">
-      <h4>3. Динамические режимы и как их увидеть</h4>
+      <h4>3. Dynamic Regimes and How to Observe Them</h4>
       <ul>${m.info.regimes.map(item => `<li>${item}</li>`).join('')}</ul>
     </section>
   `;
@@ -722,9 +773,48 @@ function switchModel(key) {
   isCurrentOn = false;
   updateCurrentButton();
   updateUIForModel();
+  
+  if (key === 'izh') {
+    currentIzhPreset = 'RS';
+    applyIzhPreset('RS');
+    document.querySelectorAll('.preset-btn[data-preset]').forEach(b => b.classList.remove('active'));
+    document.querySelector('.preset-btn[data-preset="RS"]').classList.add('active');
+  } else if (key === 'ml') {
+    applyMLPreset('type1');
+    document.querySelectorAll('.preset-btn[data-ml-preset]').forEach(b => b.classList.remove('active'));
+    document.querySelector('.preset-btn[data-ml-preset="type1"]').classList.add('active');
+  }
 }
 
-// ===== ГРАФИКИ =====
+function applyIzhPreset(presetKey) {
+  const p = IZH_PRESETS[presetKey];
+  if (!p) return;
+  currentParams = { a: p.a, b: p.b, c: p.c, d: p.d };
+  currentState = { V: -70, u: p.b * -70 };
+  history = [];
+  simTime = 0;
+  flashUntil = 0;
+  
+  ampSlider.value = p.I_default;
+  ampVal.textContent = p.I_default;
+}
+
+function applyMLPreset(presetKey) {
+  if (presetKey === 'type1') {
+    currentParams = { C: 20, gCa: 4.0, gK: 8, gL: 2, VCa: 120, VK: -84, VL: -60, V1: -1.2, V2: 18, V3: 12, V4: 17.4, phi: 0.067 };
+    ampSlider.value = 50;
+  } else {
+    currentParams = { C: 20, gCa: 4.4, gK: 8, gL: 2, VCa: 120, VK: -84, VL: -60, V1: -1.2, V2: 18, V3: 2, V4: 30, phi: 0.04 };
+    ampSlider.value = 100;
+  }
+  ampVal.textContent = ampSlider.value;
+  currentState = { V: -60.8553822323, w: 0.014915024954 };
+  history = [];
+  simTime = 0;
+  flashUntil = 0;
+}
+
+// ===== CHART DRAWING =====
 function niceStep(range, target) {
   const raw = range / target;
   const steps = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000];
@@ -757,7 +847,6 @@ function draw() {
   }
   ctxV.textAlign = 'left'; ctxV.fillStyle = '#7a89a8'; ctxV.fillText(MODELS[currentModelKey].stateLabel, padL - 40, padT - 2);
 
-  // Draw a reference line only when the model has an explicit threshold/reset condition.
   if (m.thresholdLine && m.thresholdLine.value >= Vmin && m.thresholdLine.value <= Vmax) {
     const yThreshold = vToPy(m.thresholdLine.value, HV);
     ctxV.save();
@@ -810,7 +899,7 @@ function draw() {
   }
 }
 
-// ===== ГЛАВНЫЙ ЦИКЛ =====
+// ===== MAIN LOOP =====
 const stepsPerMsReal = TIME_SCALE / dt / 1000;
 let accumMs = 0;
 let lastRealTime = performance.now();
@@ -850,12 +939,31 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
-// ===== СОБЫТИЯ =====
+// ===== EVENTS =====
 document.querySelectorAll('.model-btn').forEach(btn => {
   btn.addEventListener('click', (e) => {
     document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
     e.target.classList.add('active');
     switchModel(e.target.dataset.model);
+  });
+});
+
+document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.preset-btn[data-preset]').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    currentIzhPreset = e.target.dataset.preset;
+    applyIzhPreset(currentIzhPreset);
+    vNowEl.textContent = getDisplayV().toFixed(1);
+  });
+});
+
+document.querySelectorAll('.preset-btn[data-ml-preset]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.preset-btn[data-ml-preset]').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    applyMLPreset(e.target.dataset.mlPreset);
+    vNowEl.textContent = getDisplayV().toFixed(1);
   });
 });
 
@@ -866,7 +974,7 @@ ampSlider.addEventListener('input', () => {
 function updateCurrentButton() {
   currentBtn.classList.toggle('active', isCurrentOn);
   currentBtn.setAttribute('aria-pressed', String(isCurrentOn));
-  currentBtn.textContent = isCurrentOn ? 'ТОК: ВКЛ' : 'ТОК: ВЫКЛ';
+  currentBtn.textContent = isCurrentOn ? 'CURRENT: ON' : 'CURRENT: OFF';
 }
 
 currentBtn.addEventListener('click', () => {
