@@ -480,14 +480,14 @@ const MODELS = {
       paper: 'Lapicque, L. (1907). Recherches quantitatives sur l\'excitation électrique des nerfs traitée comme une polarisation.',
       equations: String.raw`\left\{\begin{array}{ll}
 \tau_m \frac{dV}{dt} = -(V - V_{rest}) + R I(t) & \\
-\text{when } V \ge V_{th}: & V \leftarrow V_{reset} \\
+\text{when } V \ge V_{th}: & V \rightarrow V_{reset} \\
 \text{refractory period:} & V = V_{reset} \text{ for } \tau_{refract}
 \end{array}\right.`,
       concept: "In 1907, Louis Lapicque proposed the LIF (Leaky Integrate-and-Fire) model, treating the cell membrane as an electrical capacitor. This allowed the description of charge accumulation and threshold excitation using a single linear differential equation. Due to its computational efficiency, the model is widely used in theoretical neuroscience to simulate the dynamics of large neural networks.",
-      limitations: "The model describes only the threshold event and does not reproduce the shape of the action potential, as it lacks variables for the dynamics of ionic conductances. Therefore, it is not intended for studying repolarization mechanisms, adaptation, or complex activity patterns (e.g., bursting), which require more detailed models.",
+      limitations: "The model describes only the threshold event and does not reproduce the shape of the action potential, as it lacks variables for the dynamics of ionic conductances. It does not capture spike-frequency adaptation or subthreshold oscillations, which are present in real neurons. Therefore, it is not intended for studying repolarization mechanisms, adaptation, or complex activity patterns (e.g., bursting), which require more detailed models.",
       regimes: [
-        "Subthreshold response: turn on the current and set the amplitude below approximately 1.5. The voltage will approach a steady state, but no spikes will occur.",
-        "Regular spiking: turn on the current and increase the amplitude above approximately 1.5. With constant current, a sequence of identically shaped spikes will appear; with increasing current, the frequency usually increases.",
+        "Subthreshold response: apply a constant current step below the threshold value (where the steady-state voltage does not reach $V_{th}$). The voltage will approach a steady state, but no spikes will occur.",
+        "Regular spiking: apply a constant current step above the threshold value. A sequence of identically shaped spikes will appear; with increasing current, the frequency usually increases.",
         "Refractory pause: after each spike, the voltage is forced to the reset level for a specified time. Complex bursts or adaptation are not reproduced by this version of LIF."
       ]
     }
@@ -507,10 +507,10 @@ C_m \frac{dV}{dt} = I - g_{Na} m^3 h (V - E_{Na}) - g_K n^4 (V - E_K) - g_L (V -
 \frac{dn}{dt} = \alpha_n(V)(1-n) - \beta_n(V)n &
 \end{array}\right.`,
       concept: "In 1952, A. Hodgkin and A. Huxley proposed the Hodgkin-Huxley model for the quantitative description of action potential generation, based on data from the giant squid axon. By measuring currents under voltage clamp, the authors predicted the mechanism of ion channels: they postulated independent sodium and potassium pathways, controlled by gating particles (m, h, n) whose kinetics depend on the membrane potential. The model was the first to link the nonlinear dynamics of these conductances to the shape of the electrical impulse, for which the authors were awarded the Nobel Prize.",
-      limitations: "The classical parameterization is strictly tied to a specific biological object (the giant squid axon) and cannot be directly transferred to mammalian neurons without additional parameter fitting. Furthermore, the high computational complexity (a system of four nonlinear differential equations) limits its application in large-scale network simulations compared to phenomenological models.",
+      limitations: "The classical parameters were derived for the giant squid axon. For application to mammalian neurons, these parameters must be calibrated (fitted) to the specific cell type. The model requires significantly more computational resources than phenomenological models (e.g., LIF or Izhikevich) due to its system of four nonlinear differential equations.",
       regimes: [
         "Rest: keep the current off — the membrane potential remains near the resting potential.",
-        "Single spike: turn on the current with an amplitude of 5 µA/cm². The stimulus crosses the excitation threshold, generating a single action potential.",
+        "Single spike: apply a constant current step with an amplitude of 5 µA/cm². The stimulus crosses the excitation threshold, generating a single action potential.",
         "Repetitive spiking: increase the current amplitude further (e.g., above 10 µA/cm²). A train of spikes will appear. At very strong stimulation, the dynamics may also change, so frequency should not be considered a linear function of current."
       ]
     }
@@ -527,15 +527,15 @@ C_m \frac{dV}{dt} = I - g_{Na} m^3 h (V - E_{Na}) - g_K n^4 (V - E_K) - g_L (V -
       equations: String.raw`\left\{\begin{array}{ll}
 \frac{dv}{dt} = 0.04v^2 + 5v + 140 - u + I & \\
 \frac{du}{dt} = a(bv - u) & \\
-\text{when } v \ge 30\text{ mV}: & v \leftarrow c, \quad u \leftarrow u+d
+\text{when } v \ge 30\text{ mV}: & v \rightarrow c, \quad u \rightarrow u+d
 \end{array}\right.`,
       concept: "In 2003, E. M. Izhikevich proposed the Izhikevich model as a compromise between the biophysical accuracy of the Hodgkin-Huxley model and the computational efficiency of the LIF model. Using a quadratic nonlinearity and a recovery variable, the model reproduces more than 20 neurobiological spike types while remaining compatible with the simulation of large networks in real time. The original paper provides specific parameter sets (a, b, c, d) corresponding to known types of cortical neurons.",
-      limitations: "The model is phenomenological: the variables do not directly correspond to ion channel concentrations, and the spike shape is approximated. Different regimes require different values of parameters a, b, c, and d; however, this implementation provides presets corresponding to the main neuron types from the original paper.",
+      limitations: "The model is phenomenological: the variables do not directly correspond to ion channel concentrations, and the spike shape is approximated. It does not capture subthreshold oscillations or resonant properties. Different regimes require different values of parameters a, b, c, and d; however, this implementation provides presets corresponding to the main neuron types from the original paper.",
       regimes: [
         "**RS (Regular Spiking)** — `a = 0.02, b = 0.2, c = -65, d = 8`. Excitatory pyramidal neuron. When current is applied, it generates regular spikes, the frequency of which gradually decreases (spike frequency adaptation) due to the growth of the recovery variable u.",
         "**IB (Intrinsically Bursting)** — `a = 0.02, b = 0.2, c = -55, d = 4`. Neuron with intrinsic bursting. In response to a current step, it produces an initial burst of 2–4 fast spikes, after which it transitions to more infrequent single spikes.",
         "**CH (Chattering)** — `a = 0.02, b = 0.2, c = -50, d = 2`. Chattering neuron. Generates high-frequency bursts of 3–5 spikes with short pauses between them. On the graph, it appears as rhythmic 'flashes' of activity.",
-        "**FS (Fast Spiking)** — `a = 0.1, b = 0.2, c = -65, d = 2`. Fast-spiking interneuron. Due to the large `a`, the variable u follows v very quickly, which prevents adaptation. It produces high-frequency regular spikes without a decrease in frequency.",
+        "**FS (Fast Spiking)** — `a = 0.1, b = 0.2, c = -65, d = 2`. Fast-spiking interneuron. Due to the large `a`, the variable u follows v very quickly, which prevents adaptation. It produces high-frequency regular spikes without a decrease in frequency and has a low threshold.",
         "**LTS (Low-Threshold Spiking)** — `a = 0.02, b = 0.25, c = -65, d = 2`. Low-threshold spiking neuron. A higher `b` accelerates the accumulation of u and enhances adaptation. It produces single spikes with a noticeable increase in the inter-spike interval."
       ]
     }
@@ -556,11 +556,11 @@ w_\infty(V) = \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_3}{V_4}\right)\right] 
 \tau_w(V) = \frac{1}{\cosh\left(\frac{V - V_3}{2V_4}\right)} &
 \end{array}\right.`,
       concept: "In 1981, C. Morris and H. Lecar proposed the Morris-Lecar model to describe voltage oscillations in the giant muscle fiber of crustaceans. The novelty was the simplification of the biophysics: instead of the full Hodgkin-Huxley system, they used the assumption of instantaneous calcium current activation m∞(V), leaving only the slow potassium conductance w as a dynamic variable. This preserved the biological meaning of the currents but reduced the system dimension to two variables, making it a canonical model for phase analysis and bifurcation theory.",
-      limitations: "In the original paper, Morris and Lecar note that their model is a simplification intended to describe a specific experimental preparation—the giant muscle fiber of crustaceans. The assumption of instantaneous calcium current activation (m∞) was based on experimental data for this object and is not universal for all excitable cells. The model does not aim to describe the full kinetics of ion channels and does not account for, for example, calcium-dependent inactivation of potassium channels, which was suppressed with EGTA in the original experiment.",
+      limitations: "In the original paper, Morris and Lecar note that their model is a simplification intended to describe a specific experimental preparation—the giant muscle fiber of crustaceans. The assumption of instantaneous calcium current activation (m∞) was based on experimental data for this object and is not universal for all excitable cells. The model does not account for calcium channel inactivation, which limits its application for describing prolonged depolarizations.",
       regimes: [
         "Rest: turn off the current — the voltage should remain near the steady-state level.",
-        "Tonic activity: turn on the current and set the amplitude around 100. For the parameters chosen here, repetitive spiking activity is expected.",
-        "Transition threshold: slowly vary the current from low to high values and observe when rest transitions to oscillations. Near the transition, different types of oscillation onset may occur; the exact picture depends on the parameters, not just the model name."
+        "Tonic activity (Type II / Hopf): turn on the current and set the amplitude around 100. For the parameters chosen here, repetitive spiking activity is expected to start with a non-zero frequency (Hopf bifurcation).",
+        "Transition threshold (Type I / SNIC): if the parameters are set to Type I, oscillations start smoothly with zero frequency (SNIC bifurcation). By varying the current, one can observe the transition between rest and the oscillatory regime; the exact picture depends on the bifurcation type."
       ]
     }
   },
@@ -577,11 +577,11 @@ w_\infty(V) = \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_3}{V_4}\right)\right] 
 \frac{dw}{dt} = \frac{V + a - b w}{\tau} &
 \end{array}\right.`,
       concept: "In 1961, R. FitzHugh, and later J. Nagumo and colleagues in 1962, proposed the FitzHugh-Nagumo model as a mathematical reduction of complex biophysical excitation equations. By replacing the detailed dynamics of ionic conductances with a cubic nonlinearity and a single slow recovery variable, the model preserves the fundamental topological properties of an excitable system—threshold, refractoriness, and self-oscillations. Its value lies in allowing these dynamic regimes to be studied analytically and visualized on a phase plane, making it a classic tool in nonlinear dynamics.",
-      limitations: "FitzHugh emphasized that the purpose of the model was to create a qualitative 'caricature' of excitability, rather than an exact quantitative description of membrane currents. The variables in the equations have a vague physiological meaning and do not directly correspond to specific ionic mechanisms. The model is not intended for accurately reproducing the shape of the action potential or quantitative impulse characteristics; its strength lies in demonstrating the general dynamic properties of excitable systems.",
+      limitations: "FitzHugh emphasized that the purpose of the model was to create a qualitative 'caricature' of excitability, rather than an exact quantitative description of membrane currents. The variables in the equations have a vague physiological meaning and do not directly correspond to specific ionic mechanisms. The model is not intended for accurately reproducing the shape of the action potential; its strength lies in demonstrating the general dynamic properties of excitable systems, including hysteresis (the system can be at rest or oscillating at the same current, depending on initial conditions).",
       regimes: [
         "Stable rest: turn off the current and observe how the system reaches a steady state.",
-        "Excitable response: turn on a small current or briefly turn the stimulus on and off. If the system crosses the threshold, a large impulse occurs, after which it recovers.",
-        "Self-oscillations: for the current parameters, try turning on a current around 0.5. Repetitive oscillations are expected on the graph; by varying the current, one can observe the transition between rest and the oscillatory regime. In this model, spikes should not be interpreted as realistic action potentials in mV."
+        "Excitable response: apply a small current or briefly turn the stimulus on and off. If the system crosses the threshold, a large impulse occurs, after which it recovers.",
+        "Self-oscillations: for the current parameters, try applying a current around 0.5. Repetitive oscillations are expected on the graph; due to hysteresis, the system may remain in a stable state or transition to oscillations depending on the initial conditions."
       ]
     }
   },
@@ -590,7 +590,6 @@ w_\infty(V) = \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_3}{V_4}\right)\right] 
     initial: { x: -1.76627051, y: -14.59855758, z: -0.66508204 },
     params: { a: 1, b: 2.7, c: 1, d: 5, r: 0.01, s: 4, x_R: -1.6 },
     stateLabel: 'x', stateUnit: 'a.u.', currentUnit: 'a.u.', timeUnit: 'mod. units',
-    // UPDATED: default current set to 3
     ranges: { amp: { min: 0, max: 5, step: 0.1, val: 3.0 }, V: [-3, 3] },
     info: {
       paper: 'Hindmarsh, J. L., & Rose, R. M. (1984). A model of neuronal bursting using three coupled first order differential equations. DOI: 10.1098/rspb.1984.0024.',
@@ -600,10 +599,10 @@ w_\infty(V) = \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_3}{V_4}\right)\right] 
 \frac{dz}{dt} = r \left[ s(x - x_R) - z \right] &
 \end{array}\right.`,
       concept: "In 1984, J. Hindmarsh and R. Rose proposed the Hindmarsh-Rose model to describe the phenomenon of bursting. The introduction of a third, slowest variable (adaptation current) generated dynamics with widely differing time scales (fast-slow dynamics). This allowed the mathematical description of complex transitions between the generation of spike trains and the resting state, which is critically important for studying central pattern generators (CPG) and endocrine cells.",
-      limitations: "In the original paper, the authors note that their model was developed as a generalization of the FitzHugh-Nagumo model to describe bursting and does not claim a direct biophysical interpretation of the variables x, y, and z. Reviews also indicate that the physical meaning of these variables in the model is not disclosed. The model is intended for a qualitative description of bursting dynamics and does not describe specific ion channels.",
+      limitations: "In the original paper, the authors note that their model was developed as a generalization of the FitzHugh-Nagumo model to describe bursting and does not claim a direct biophysical interpretation of the variables x, y, and z. Reviews also indicate that the physical meaning of these variables in the model is not disclosed. The model is phenomenological and cannot be used to study molecular mechanisms; depending on the parameters, it can exhibit transitions to chaos.",
       regimes: [
         "Bursting activity: keep the parameters as set and turn on the current with a value of 4. Look at a long graph window: groups of fast spikes separated by quiet intervals should be visible.",
-        "Regime change: after observing bursts, gradually vary the current within the slider range of 0–5. Depending on the value, one can transition to rest or another type of firing; the transition boundaries are not universal."
+        "Regime change: after observing bursts, gradually vary the current within the slider range of 0–5. Depending on the value, one can transition to rest, regular spiking, or chaotic bursting."
       ]
     }
   }
