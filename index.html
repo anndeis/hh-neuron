@@ -14,25 +14,18 @@
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
 <style>
   :root {
-    --bg: #0f1420;
-    --panel-bg: #16203a;
-    --border: #2a3550;
-    --text: #e6e6e6;
-    --text-dim: #9fb3d9;
-    --accent: #7fd4ff;
-    --accent-dark: #3a4a70;
-    --danger: #d94848;
+    --bg: #0f1420; --panel-bg: #16203a; --border: #2a3550;
+    --text: #e6e6e6; --text-dim: #9fb3d9;
+    --accent: #7fd4ff; --accent-dark: #3a4a70; --danger: #d94848;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
     font-family: system-ui, -apple-system, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.6;
+    background: var(--bg); color: var(--text); line-height: 1.6;
   }
 
-  /* ===== Верхняя навигация ===== */
+  /* ===== Верхняя навигация (всегда на месте) ===== */
   .topbar {
     position: sticky; top: 0; z-index: 50;
     display: flex; align-items: center; gap: 24px;
@@ -42,12 +35,13 @@
     border-bottom: 1px solid var(--border);
     flex-wrap: wrap;
   }
-  .brand { font-weight: 600; color: var(--accent); font-size: 18px; text-decoration: none; }
+  .brand { font-weight: 600; color: var(--accent); font-size: 18px; text-decoration: none; cursor: pointer; }
   .nav-links { display: flex; gap: 6px; flex-wrap: wrap; }
   .nav-link {
     padding: 8px 16px; border-radius: 8px; border: 1px solid transparent;
     background: transparent; color: var(--text); cursor: pointer;
     font-size: 14px; font-weight: 500; text-decoration: none; transition: all 0.15s;
+    font-family: inherit;
   }
   .nav-link:hover { background: #1e2a45; }
   .nav-link.active { background: var(--accent-dark); border-color: var(--accent); color: #fff; }
@@ -67,7 +61,7 @@
   .home-card {
     flex: 1 1 240px; max-width: 320px; padding: 20px;
     background: var(--panel-bg); border: 1px solid var(--border); border-radius: 12px;
-    color: var(--text); text-decoration: none; transition: all 0.15s;
+    color: var(--text); text-decoration: none; transition: all 0.15s; cursor: pointer;
   }
   .home-card:hover { border-color: var(--accent); box-shadow: 0 0 14px rgba(127,212,255,0.15); }
   .home-card h3 { margin: 0 0 8px; color: var(--accent); }
@@ -75,10 +69,13 @@
   .icons { display: flex; gap: 20px; justify-content: center; margin-top: 40px; flex-wrap: wrap; }
   .icons img { height: 48px; opacity: 0.8; }
 
-  /* ===== Симулятор (перенесено из вашего кода) ===== */
-  .app-container {
-    display: flex; gap: 14px; width: 100%; align-items: flex-start;
-  }
+  /* ===== Заглушки разделов ===== */
+  .stub { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+  .stub h1 { color: var(--text); }
+  .stub p { max-width: 560px; margin: 12px auto; }
+
+  /* ===== Симулятор ===== */
+  .app-container { display: flex; gap: 14px; width: 100%; align-items: flex-start; }
   .sidebar {
     width: 220px; flex-shrink: 0; background: var(--panel-bg);
     border: 1px solid var(--border); border-radius: 12px; padding: 16px;
@@ -89,7 +86,7 @@
   .model-btn {
     background: transparent; border: 1px solid var(--border); color: var(--text);
     padding: 10px 14px; border-radius: 8px; text-align: left; cursor: pointer;
-    font-size: 14px; transition: all 0.15s; font-weight: 500;
+    font-size: 14px; transition: all 0.15s; font-weight: 500; font-family: inherit;
   }
   .model-btn:hover { background: #1e2a45; border-color: var(--accent-dark); }
   .model-btn.active { background: var(--accent-dark); border-color: var(--accent);
@@ -137,6 +134,7 @@
   #currentBtn {
     padding: 10px 28px; font-size: 16px; font-weight: 600; border: none; border-radius: 8px;
     background: var(--accent-dark); color: #fff; cursor: pointer; user-select: none; transition: background 0.15s;
+    font-family: inherit;
   }
   #currentBtn.active { background: var(--danger); }
   #currentBtn:active { transform: translateY(1px); }
@@ -149,7 +147,7 @@
   .preset-group label { font-size: 13px; color: var(--text-dim); margin-right: 4px; }
   .preset-btn {
     padding: 6px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border);
-    background: transparent; color: var(--text); cursor: pointer; transition: all 0.15s;
+    background: transparent; color: var(--text); cursor: pointer; transition: all 0.15s; font-family: inherit;
   }
   .preset-btn:hover { background: #1e2a45; border-color: var(--accent-dark); }
   .preset-btn.active { background: var(--accent-dark); border-color: var(--accent); color: #fff; }
@@ -209,15 +207,16 @@
 </head>
 <body>
 
-<!-- ===== Навигация ===== -->
+<!-- ===== Навигация (единая, всегда видна) ===== -->
 <header class="topbar">
-  <a href="#" class="brand" data-page="home">MathBrain</a>
+  <a class="brand" data-page="home">MathBrain</a>
   <nav class="nav-links">
     <button class="nav-link active" data-page="home">Главная</button>
     <button class="nav-link" data-page="sim">Симулятор моделей</button>
-    <a class="nav-link" href="lecture/">Лекции</a>
-    <a class="nav-link" href="education/">Программы института</a>
-    <a class="nav-link" href="literature/">Литература</a>
+    <button class="nav-link" data-page="lecture">Лекции</button>
+    <button class="nav-link" data-page="education">Программы института</button>
+    <button class="nav-link" data-page="literature">Литература</button>
+    <a class="nav-link" href="https://github.com/anndeis/hh-neuron" target="_blank" rel="noopener">GitHub</a>
   </nav>
 </header>
 
@@ -251,19 +250,19 @@
     для дальнейшего погружения в интересующие сферы. 🙂</p>
 
   <div class="home-cards">
-    <a class="home-card" href="lecture/">
+    <a class="home-card" data-page="lecture">
       <h3>Лекции</h3>
       <p>Серия образовательных лекций о вычислительных нейронауках.</p>
     </a>
-    <a class="home-card" href="education/">
+    <a class="home-card" data-page="education">
       <h3>Программы института</h3>
       <p>Магистерская программа и аспирантская школа ИКН ВШЭ.</p>
     </a>
-    <a class="home-card" href="literature/">
+    <a class="home-card" data-page="literature">
       <h3>Литература</h3>
       <p>Полезные книги и статьи для погружения в нейронауки.</p>
     </a>
-    <a class="home-card" href="#" data-page="sim">
+    <a class="home-card" data-page="sim">
       <h3>Симулятор моделей</h3>
       <p>Интерактивные модели нейронов: LIF, Hodgkin-Huxley, Izhikevich, Morris-Lecar и другие.</p>
     </a>
@@ -274,6 +273,11 @@
     <div><img class="icon" src="images/icons/MBg.png" alt="MathBrain"></div>
     <div><img class="icon" src="images/icons/AR.png" alt="AR"></div>
   </div>
+  <p style="text-align:center; margin-top:16px; color:#9fb3d9; font-size:14px;">
+    Исходный код: <a href="https://github.com/anndeis/hh-neuron" target="_blank" rel="noopener">github.com/anndeis/hh-neuron</a>
+    &nbsp;|&nbsp;
+    Сайт: <a href="https://anndeis.github.io/hh-neuron/" target="_blank" rel="noopener">anndeis.github.io/hh-neuron</a>
+  </p>
 </main>
 
 <!-- ===== Симулятор ===== -->
@@ -439,22 +443,78 @@ l34 -28 -41 -17 c-146 -58 -512 -71 -616 -22 -53 25 -129 103 -159 162 -73
   </div>
 </main>
 
+<!-- ===== Заглушки разделов (без 404) ===== -->
+<main id="page-lecture" class="page">
+  <div class="stub">
+    <h1>Лекции</h1>
+    <p>Серия образовательных лекций о вычислительных нейронауках.</p>
+    <p>Раздел находится в разработке. Скоро здесь появятся видеолекции и конспекты.</p>
+  </div>
+</main>
+
+<main id="page-education" class="page">
+  <div class="stub">
+    <h1>Программы института</h1>
+    <p>Магистерская программа и аспирантская школа Института когнитивных нейронаук ВШЭ.</p>
+    <p>Подробнее: <a href="https://www.hse.ru/ma/cogito" target="_blank" rel="noopener">магистерская программа</a>,
+       <a href="https://aspirantura.hse.ru/cogito" target="_blank" rel="noopener">аспирантская школа</a>.</p>
+  </div>
+</main>
+
+<main id="page-literature" class="page">
+  <div class="stub">
+    <h1>Литература</h1>
+    <p>Полезные книги и статьи для погружения в нейронауки.</p>
+    <p>Раздел находится в разработке.</p>
+  </div>
+</main>
+
 <script>
-// ===== Переключение страниц =====
+/* ============================================================
+   НАВИГАЦИЯ: все разделы — вкладки одного файла.
+   Меню всегда на месте, 404 невозможен.
+   ============================================================ */
+const PAGES = ['home', 'sim', 'lecture', 'education', 'literature'];
+
 function showPage(id) {
+  if (!PAGES.includes(id)) id = 'home';
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const page = document.getElementById('page-' + id);
   if (page) page.classList.add('active');
   document.querySelectorAll('.nav-link[data-page]').forEach(l => {
     l.classList.toggle('active', l.dataset.page === id);
   });
+  /* Обновляем hash в URL — это позволяет кнопке «назад» в браузере
+     работать корректно и не даёт 404 при возврате из раздела. */
+  if (location.hash !== '#' + id) {
+    history.pushState({ page: id }, '', '#' + id);
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+/* Клики по любым элементам с data-page (кнопки меню, карточки, brand) */
 document.querySelectorAll('[data-page]').forEach(el => {
-  el.addEventListener('click', e => { e.preventDefault(); showPage(el.dataset.page); });
+  el.addEventListener('click', e => {
+    e.preventDefault();
+    showPage(el.dataset.page);
+  });
 });
 
-// ===== MODEL DATA =====
+/* Поддержка кнопок «назад/вперёд» браузера */
+window.addEventListener('popstate', () => {
+  const id = location.hash.replace('#', '') || 'home';
+  showPage(id);
+});
+
+/* Открытие страницы по hash при загрузке (например, site/#sim) */
+window.addEventListener('DOMContentLoaded', () => {
+  const id = location.hash.replace('#', '') || 'home';
+  showPage(id);
+});
+
+/* ============================================================
+   СИМУЛЯТОР (без изменений логики)
+   ============================================================ */
 const MODELS = {
   lif: {
     title: 'LIF Model (Leaky Integrate-and-Fire)',
