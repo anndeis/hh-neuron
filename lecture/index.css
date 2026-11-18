@@ -1,0 +1,141 @@
+body {
+    user-select: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    color: rgb(54, 54, 54); 
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 1200px;
+    padding: 0px;  
+    border: 0px;    
+  }
+
+h1 {
+  color: rgb(54, 54, 54); 
+  font-size: 4em;
+  font-weight: 500;  
+}
+
+h2 {  
+  color: rgb(54, 54, 54); 
+  font-weight: 400;  
+  font-size: 2em;
+}
+
+p {    
+  color: rgb(54, 54, 54); 
+  font-size: 1.3em;
+  font-weight: 300;
+}
+
+a {  
+  color: black;
+  font-weight: 400;
+}
+
+.container {
+  position: relative;
+   width: 100%;
+   height: 0;
+   padding-bottom: 56.25%;
+}
+.video {
+   position: absolute;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+}
+
+.column {
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 7vh;
+  margin-bottom: 7vh;
+  max-width: 60vw;
+}
+
+.intro {
+  text-align: justify;
+}
+
+.title_div {
+  max-width: 90%;
+}
+
+.title {  
+  font-weight: 400;
+  text-align: center;    
+}  
+.subtitle {
+  text-align: center;
+}
+.text {
+  text-align: justify;
+}
+.button {
+  position: fixed;
+  left: 5vw;
+  right: auto;
+  bottom: 8vh;
+  top: auto; 
+}
+.back {  
+  height: min-content;
+  width: 90px;
+  text-align: center;
+  display: block;  
+  text-decoration: none;
+  font-size: 1.1em;
+  border: rgb(54, 54, 54) 1px solid;
+  color: rgb(54, 54, 54);
+  padding: 3px;
+  padding-left: 5px;
+  padding-right: auto;
+  margin-right: auto;
+  margin-top: 20px;
+  border-radius: 0px;
+  transition: border-radius 0.5s;
+}
+.back:hover {
+  top: 5px;
+  transition: 0.5s;
+  color: #0000007a;
+  border: #0000007a 1px solid;
+  border-radius: 10px;
+}
+@media screen and (max-width: 900px) {    
+  .button {    
+    display: none;   
+  }
+  .column {
+    margin-top: 5vh;
+    max-width: 90vw;
+  }
+}
+
+@media (max-width: 768px) {
+  h1 {    
+    font-size: 3em;    
+  }
+  
+  h2 {            
+    font-size: 1.5em;
+  }
+  
+  p {  
+    font-size: 1.2em;
+  }
+}
+
+@media (max-width: 550px) {
+  p {  
+    font-size: 1em;
+    font-weight: 400;
+  }
+
+  a {  
+    /* text-decoration: none; */
+    font-weight: 500;
+  }
+}
