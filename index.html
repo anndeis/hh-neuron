@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Neuron Models Simulator: from LIF to Hindmarsh-Rose</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Математика мозга — MathBrain</title>
+<link rel="icon" type="image/png" href="images/favicon/favicon-32x32.png" sizes="32x32" />
 <script>
   window.MathJax = {
     tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
@@ -22,141 +24,104 @@
     --danger: #d94848;
   }
   * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
   body {
     font-family: system-ui, -apple-system, sans-serif;
     background: var(--bg);
     color: var(--text);
-    margin: 0;
-    padding: 12px;
-    display: flex;
-    justify-content: center;
-    min-height: 100vh;
+    line-height: 1.6;
   }
+
+  /* ===== Верхняя навигация ===== */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; gap: 24px;
+    padding: 12px 24px;
+    background: rgba(15, 20, 32, 0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .brand { font-weight: 600; color: var(--accent); font-size: 18px; text-decoration: none; }
+  .nav-links { display: flex; gap: 6px; flex-wrap: wrap; }
+  .nav-link {
+    padding: 8px 16px; border-radius: 8px; border: 1px solid transparent;
+    background: transparent; color: var(--text); cursor: pointer;
+    font-size: 14px; font-weight: 500; text-decoration: none; transition: all 0.15s;
+  }
+  .nav-link:hover { background: #1e2a45; }
+  .nav-link.active { background: var(--accent-dark); border-color: var(--accent); color: #fff; }
+
+  /* ===== Страницы ===== */
+  .page { display: none; padding: 24px; max-width: 1100px; margin: 0 auto; }
+  .page.active { display: block; }
+  .page h1 { font-size: 28px; margin-top: 0; }
+  .page h2 { color: var(--accent); font-size: 20px; }
+  .page a { color: var(--accent); }
+
+  /* ===== Главная ===== */
+  .hero { text-align: center; padding: 40px 0 24px; }
+  .hero h1 { font-size: 36px; margin: 0 0 8px; }
+  .hero h2 { font-weight: 400; color: var(--text-dim); font-size: 18px; margin: 0; }
+  .home-cards { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-top: 32px; }
+  .home-card {
+    flex: 1 1 240px; max-width: 320px; padding: 20px;
+    background: var(--panel-bg); border: 1px solid var(--border); border-radius: 12px;
+    color: var(--text); text-decoration: none; transition: all 0.15s;
+  }
+  .home-card:hover { border-color: var(--accent); box-shadow: 0 0 14px rgba(127,212,255,0.15); }
+  .home-card h3 { margin: 0 0 8px; color: var(--accent); }
+  .home-card p { margin: 0; color: var(--text-dim); font-size: 14px; }
+  .icons { display: flex; gap: 20px; justify-content: center; margin-top: 40px; flex-wrap: wrap; }
+  .icons img { height: 48px; opacity: 0.8; }
+
+  /* ===== Симулятор (перенесено из вашего кода) ===== */
   .app-container {
-    display: flex;
-    gap: 14px;
-    max-width: 1800px;
-    width: 100%;
-    align-items: flex-start;
+    display: flex; gap: 14px; width: 100%; align-items: flex-start;
   }
-
-  /* === Left Sidebar === */
   .sidebar {
-    width: 220px;
-    flex-shrink: 0;
-    background: var(--panel-bg);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    position: sticky;
-    top: 20px;
+    width: 220px; flex-shrink: 0; background: var(--panel-bg);
+    border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+    display: flex; flex-direction: column; gap: 8px; position: sticky; top: 80px;
   }
-  .sidebar h2 {
-    font-size: 16px;
-    margin: 0 0 12px 0;
-    color: var(--text-dim);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
+  .sidebar h2 { font-size: 16px; margin: 0 0 12px; color: var(--text-dim);
+    font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }
   .model-btn {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 10px 14px;
-    border-radius: 8px;
-    text-align: left;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.15s;
-    font-weight: 500;
+    background: transparent; border: 1px solid var(--border); color: var(--text);
+    padding: 10px 14px; border-radius: 8px; text-align: left; cursor: pointer;
+    font-size: 14px; transition: all 0.15s; font-weight: 500;
   }
-  .model-btn:hover {
-    background: #1e2a45;
-    border-color: var(--accent-dark);
-  }
-  .model-btn.active {
-    background: var(--accent-dark);
-    border-color: var(--accent);
-    color: #fff;
-    box-shadow: 0 0 10px rgba(127, 212, 255, 0.2);
-  }
+  .model-btn:hover { background: #1e2a45; border-color: var(--accent-dark); }
+  .model-btn.active { background: var(--accent-dark); border-color: var(--accent);
+    color: #fff; box-shadow: 0 0 10px rgba(127,212,255,0.2); }
 
-  /* === Central Area === */
-  .main-content {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-  }
-  h1 { font-size: 20px; font-weight: 500; margin: 0; text-align: center; }
+  .main-content { flex: 1 1 auto; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .main-content h1 { font-size: 20px; font-weight: 500; margin: 0; text-align: center; }
 
-  .simulation-layout {
-    position: relative;
-    display: block;
-    width: 100%;
-    min-width: 0;
-  }
-  
-  /* Возвращено как было, но bottom уменьшен для лёгкого смещения вниз */
+  .simulation-layout { position: relative; display: block; width: 100%; min-width: 0; }
   .neuron-wrap {
-    position: fixed;
-    left: 24px;
-    bottom: -10px; /* Немного ниже, чем было (было 8px) */
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    width: 500px;
-    height: 250px;
-    margin: 0;
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    padding: 0;
-    box-shadow: none;
-    overflow: visible;
-    z-index: 1;
-    pointer-events: none;
+    position: fixed; left: 24px; bottom: -10px;
+    display: flex; justify-content: flex-start; align-items: center;
+    width: 500px; height: 250px; margin: 0; background: transparent;
+    border: none; border-radius: 0; padding: 0; box-shadow: none;
+    overflow: visible; z-index: 1; pointer-events: none;
   }
   .neuron-svg {
-    width: 100%;
-    height: 100%;
-    display: block;
-    overflow: visible;
-    transform: rotate(23deg);
-    transform-origin: center;
-    transition: filter 0.15s;
+    width: 100%; height: 100%; display: block; overflow: visible;
+    transform: rotate(23deg); transform-origin: center; transition: filter 0.15s;
   }
-  .neuron-svg path {
-    fill: #5a6e9e;
-    transition: fill 0.15s;
-  }
+  .neuron-svg path { fill: #5a6e9e; transition: fill 0.15s; }
   .neuron-wrap.firing .neuron-svg {
     filter: drop-shadow(0 0 8px #7fd4ff) drop-shadow(0 0 18px #7fd4ff);
   }
   .neuron-wrap.firing .neuron-svg path { fill: #7fd4ff; }
 
   .plot-controls {
-    width: 800px;
-    max-width: 100%;
-    min-width: 0;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    width: 800px; max-width: 100%; min-width: 0; margin: 0 auto;
+    display: flex; flex-direction: column; gap: 8px;
   }
-  canvas {
-    background: #0a0e17;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    display: block;
-    width: 100%;
-    height: auto;
-  }
+  canvas { background: #0a0e17; border: 1px solid var(--border); border-radius: 8px;
+    display: block; width: 100%; height: auto; }
   #plotV { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: none; }
   #plotI { border-top-left-radius: 0; border-top-right-radius: 0; }
 
@@ -171,14 +136,12 @@
   input[type=range] { width: 200px; accent-color: var(--accent); }
   #currentBtn {
     padding: 10px 28px; font-size: 16px; font-weight: 600; border: none; border-radius: 8px;
-    background: var(--accent-dark); color: #fff; cursor: pointer; user-select: none;
-    transition: background 0.15s;
+    background: var(--accent-dark); color: #fff; cursor: pointer; user-select: none; transition: background 0.15s;
   }
   #currentBtn.active { background: var(--danger); }
   #currentBtn:active { transform: translateY(1px); }
   .value { font-variant-numeric: tabular-nums; min-width: 34px; text-align: right; color: var(--accent); }
 
-  /* Preset Groups */
   .preset-group {
     display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
     background: #0f1420; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
@@ -191,81 +154,34 @@
   .preset-btn:hover { background: #1e2a45; border-color: var(--accent-dark); }
   .preset-btn.active { background: var(--accent-dark); border-color: var(--accent); color: #fff; }
 
-  /* === Right Info Panel === */
   .info-panel {
-    width: 340px;
-    flex-shrink: 0;
-    background: var(--panel-bg);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    position: sticky;
-    top: 20px;
-    max-height: calc(100vh - 40px);
-    overflow-y: auto;
-    font-size: 14px;
-    line-height: 1.5;
+    width: 340px; flex-shrink: 0; background: var(--panel-bg);
+    border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+    position: sticky; top: 80px; max-height: calc(100vh - 100px); overflow-y: auto;
+    font-size: 14px; line-height: 1.5;
   }
-  .info-panel h3 {
-    color: var(--accent);
-    margin-top: 0;
-    margin-bottom: 12px;
-    font-size: 18px;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 8px;
-  }
-  .info-panel .paper-ref {
-    font-style: italic;
-    color: var(--text-dim);
-    font-size: 13px;
-    margin-bottom: 16px;
-    padding: 8px;
-    background: #0f1420;
-    border-radius: 6px;
-    border-left: 3px solid var(--accent);
-  }
-  
-  .info-panel .equations {
-    background: #0a0e17;
-    padding: 12px;
-    border-radius: 6px;
-    overflow-x: auto;
-    margin: 12px 0;
-    color: #b8e8ff;
-    text-align: left;
-  }
-  .info-panel .equations mjx-container {
-    color: #b8e8ff !important;
-    margin: 0 !important;
-  }
-  .info-panel .equations mjx-container > svg {
-    display: block;
-    margin: 0 auto 0 0; 
-  }
-
-  .info-panel .info-section {
-    margin-top: 14px;
-    padding: 12px;
-    background: rgba(127, 212, 255, 0.06);
-    border-radius: 6px;
-    border: 1px solid rgba(127, 212, 255, 0.16);
-  }
-  .info-panel .info-section h4 {
-    color: var(--accent);
-    margin: 0 0 7px;
-    font-size: 14px;
-    line-height: 1.35;
-  }
+  .info-panel h3 { color: var(--accent); margin-top: 0; margin-bottom: 12px; font-size: 18px;
+    border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  .info-panel .paper-ref { font-style: italic; color: var(--text-dim); font-size: 13px;
+    margin-bottom: 16px; padding: 8px; background: #0f1420; border-radius: 6px;
+    border-left: 3px solid var(--accent); }
+  .info-panel .equations { background: #0a0e17; padding: 12px; border-radius: 6px;
+    overflow-x: auto; margin: 12px 0; color: #b8e8ff; text-align: left; }
+  .info-panel .equations mjx-container { color: #b8e8ff !important; margin: 0 !important; }
+  .info-panel .equations mjx-container > svg { display: block; margin: 0 auto 0 0; }
+  .info-panel .info-section { margin-top: 14px; padding: 12px;
+    background: rgba(127,212,255,0.06); border-radius: 6px; border: 1px solid rgba(127,212,255,0.16); }
+  .info-panel .info-section h4 { color: var(--accent); margin: 0 0 7px; font-size: 14px; line-height: 1.35; }
   .info-panel .info-section p { margin: 0; color: #c0cce0; }
   .info-panel .info-section ul { margin: 0; padding-left: 18px; color: #c0cce0; }
   .info-panel .info-section li { margin: 0 0 9px; }
   .info-panel .info-section li:last-child { margin-bottom: 0; }
-  .info-panel .limitations { background: rgba(255, 190, 100, 0.045); border-color: rgba(255, 190, 100, 0.16); }
+  .info-panel .limitations { background: rgba(255,190,100,0.045); border-color: rgba(255,190,100,0.16); }
   .info-panel .limitations h4 { color: #ffd08a; }
   .info-panel p { margin: 8px 0; color: #c0cce0; }
 
   @media (max-width: 1150px) {
-    body { padding: 8px; }
+    .topbar { padding: 10px 16px; }
     .app-container { gap: 10px; }
     .sidebar { width: 170px; padding: 10px; }
     .info-panel { width: 270px; padding: 14px; }
@@ -277,25 +193,12 @@
     .sidebar h2 { width: 100%; margin-bottom: 2px; }
     .main-content { flex-basis: 60%; }
     .info-panel { flex: 1 1 100%; width: 100%; max-height: none; position: static; }
-    .neuron-wrap {
-      position: fixed;
-      left: -35px;
-      bottom: -20px; /* Немного ниже и на мобильных */
-      width: 330px;
-      height: 165px;
-      opacity: 0.9;
-    }
+    .neuron-wrap { left: -35px; bottom: -20px; width: 330px; height: 165px; opacity: 0.9; }
     .plot-controls { width: 100%; }
   }
   @media (max-width: 560px) {
     .simulation-layout { padding-bottom: 68px; }
-    .neuron-wrap {
-      width: 210px;
-      height: 105px;
-      left: -45px;
-      bottom: -30px; /* Ещё ниже на мобильных */
-      opacity: 0.65;
-    }
+    .neuron-wrap { width: 210px; height: 105px; left: -45px; bottom: -30px; opacity: 0.65; }
     .controls { align-items: stretch; }
     .slider-group { flex-wrap: wrap; }
     input[type=range] { width: 100%; }
@@ -306,25 +209,94 @@
 </head>
 <body>
 
-<div class="app-container">
-  <div class="sidebar">
-    <h2>Models</h2>
-    <button class="model-btn active" data-model="lif">LIF</button>
-    <button class="model-btn" data-model="hh">Hodgkin-Huxley</button>
-    <button class="model-btn" data-model="izh">Izhikevich</button>
-    <button class="model-btn" data-model="ml">Morris-Lecar</button>
-    <button class="model-btn" data-model="fh">FitzHugh-Nagumo</button>
-    <button class="model-btn" data-model="hr">Hindmarsh-Rose</button>
+<!-- ===== Навигация ===== -->
+<header class="topbar">
+  <a href="#" class="brand" data-page="home">MathBrain</a>
+  <nav class="nav-links">
+    <button class="nav-link active" data-page="home">Главная</button>
+    <button class="nav-link" data-page="sim">Симулятор моделей</button>
+    <a class="nav-link" href="lecture/">Лекции</a>
+    <a class="nav-link" href="education/">Программы института</a>
+    <a class="nav-link" href="literature/">Литература</a>
+  </nav>
+</header>
+
+<!-- ===== Главная ===== -->
+<main id="page-home" class="page active">
+  <div class="hero">
+    <h1>Привет</h1>
+    <h2>Это «Математика мозга»</h2>
+  </div>
+  <p>«Математика мозга» — это проект по популяризации вычислительных нейронаук среди специалистов с
+    образованием в области математики, компьютерных наук и смежных областях. Также проект
+    заинтересован в привлечении таких специалистов на образовательные программы
+    <a href="https://neuro.hse.ru" target="_blank" rel="noopener">Института когнитивных нейронаук ВШЭ</a>.</p>
+  <br>
+  <p>Вычислительные нейронауки — это область пересечения математики, компьютерных наук и наук о мозге.
+    В этой сфере существует множество сложных и интересных задач, начиная с моделирования систем
+    дифференциальных уравнений и вероятностных процессов, описывающих нейронную активность и
+    поведение организмов, соответственно, и заканчивая анализом данных, полученных различными
+    методами нейровизуализации. Это молодая научная область, которая в ближайшее время будет
+    стремительно развиваться в связи с развитием естественнонаучных методов исследования
+    биологических систем, вычислительных способностей компьютеров и интереса к искусственному
+    интеллекту.</p>
+  <br>
+  <p><a href="https://neuro.hse.ru" target="_blank" rel="noopener">Институт когнитивных нейронаук ВШЭ</a>
+    реализует междисциплинарные
+    <a href="https://www.hse.ru/ma/cogito" target="_blank" rel="noopener">магистерскую программу</a> и
+    <a href="https://aspirantura.hse.ru/cogito" target="_blank" rel="noopener">аспирантскую школу</a>,
+    которые могут помочь Вам стать специалистом в области нейронаук.
+    На этом сайте Вы найдете информацию об институте и его образовательных программах, серию
+    образовательных лекций о различных сферах вычислительных нейронаук и полезную литературу
+    для дальнейшего погружения в интересующие сферы. 🙂</p>
+
+  <div class="home-cards">
+    <a class="home-card" href="lecture/">
+      <h3>Лекции</h3>
+      <p>Серия образовательных лекций о вычислительных нейронауках.</p>
+    </a>
+    <a class="home-card" href="education/">
+      <h3>Программы института</h3>
+      <p>Магистерская программа и аспирантская школа ИКН ВШЭ.</p>
+    </a>
+    <a class="home-card" href="literature/">
+      <h3>Литература</h3>
+      <p>Полезные книги и статьи для погружения в нейронауки.</p>
+    </a>
+    <a class="home-card" href="#" data-page="sim">
+      <h3>Симулятор моделей</h3>
+      <p>Интерактивные модели нейронов: LIF, Hodgkin-Huxley, Izhikevich, Morris-Lecar и другие.</p>
+    </a>
   </div>
 
-  <div class="main-content">
-    <h1 id="modelTitle">LIF Model</h1>
+  <div class="icons">
+    <div><img class="icon" src="images/icons/HSE.png" alt="ВШЭ"></div>
+    <div><img class="icon" src="images/icons/MBg.png" alt="MathBrain"></div>
+    <div><img class="icon" src="images/icons/AR.png" alt="AR"></div>
+  </div>
+</main>
 
-    <div class="simulation-layout">
-      <div class="neuron-wrap" id="neuronWrap">
-        <svg class="neuron-svg" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-          <g transform="translate(0.000000,640.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
-            <path d="M12110 6111 c-64 -35 -79 -59 -86 -141 -4 -44 -16 -96 -29 -127 -43
+<!-- ===== Симулятор ===== -->
+<main id="page-sim" class="page">
+  <div class="app-container">
+    <div class="sidebar">
+      <h2>Models</h2>
+      <button class="model-btn active" data-model="lif">LIF</button>
+      <button class="model-btn" data-model="hh">Hodgkin-Huxley</button>
+      <button class="model-btn" data-model="izh">Izhikevich</button>
+      <button class="model-btn" data-model="ml">Morris-Lecar</button>
+      <button class="model-btn" data-model="fh">FitzHugh-Nagumo</button>
+      <button class="model-btn" data-model="hr">Hindmarsh-Rose</button>
+    </div>
+
+    <div class="main-content">
+      <h1 id="modelTitle">LIF Model</h1>
+
+      <div class="simulation-layout">
+        <div class="neuron-wrap" id="neuronWrap">
+          <svg class="neuron-svg" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+            <g transform="translate(0.000000,640.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
+              <path d="M12110 6111 c-64 -35 -79 -59 -86 -141 -4 -44 -16 -96 -29 -127 -43
 -96 -248 -288 -460 -430 -177 -119 -632 -376 -648 -366 -13 8 -1 233 18 322
 38 180 112 303 216 357 16 8 80 22 141 30 109 15 168 34 168 54 0 22 -54 42
 -142 52 -142 16 -156 22 -184 92 -28 69 -49 96 -76 96 -23 0 -26 -7 -37 -109
@@ -427,48 +399,61 @@ l34 -28 -41 -17 c-146 -58 -512 -71 -616 -22 -53 25 -129 103 -159 162 -73
 274 741 381 173 61 247 100 243 128 -5 32 -51 31 -159 -3 -111 -36 -179 -48
 -179 -33 0 6 41 47 90 93 98 89 113 116 87 162 -22 38 -22 47 10 112 21 43 25
 60 17 73 -16 25 -90 26 -134 3z"/>
-          </g>
-        </svg>
-      </div>
-      <div class="plot-controls">
-        <canvas id="plotV" width="800" height="280"></canvas>
-        <canvas id="plotI" width="800" height="100"></canvas>
+            </g>
+          </svg>
+        </div>
+        <div class="plot-controls">
+          <canvas id="plotV" width="800" height="280"></canvas>
+          <canvas id="plotI" width="800" height="100"></canvas>
 
-        <div class="readout"><span id="stateLabelNow">V</span> = <b id="vNow">-65.0</b> <span id="stateUnitNow">mV</span> &nbsp;|&nbsp; I = <b id="iNow">0.0</b> <span id="currentUnitNow">nA</span> &nbsp;|&nbsp; t = <b id="tNow">0.0</b> <span id="timeUnitNow">ms</span></div>
+          <div class="readout"><span id="stateLabelNow">V</span> = <b id="vNow">-65.0</b> <span id="stateUnitNow">mV</span> &nbsp;|&nbsp; I = <b id="iNow">0.0</b> <span id="currentUnitNow">nA</span> &nbsp;|&nbsp; t = <b id="tNow">0.0</b> <span id="timeUnitNow">ms</span></div>
 
-        <div class="controls">
-          <div class="slider-group">
-            <label for="amp">Stimulus:</label>
-            <input type="range" id="amp" min="0" max="100" step="1" value="10">
-            <span class="value" id="ampVal">10</span>
+          <div class="controls">
+            <div class="slider-group">
+              <label for="amp">Stimulus:</label>
+              <input type="range" id="amp" min="0" max="100" step="1" value="10">
+              <span class="value" id="ampVal">10</span>
+            </div>
+            <button id="currentBtn" aria-pressed="false">CURRENT: OFF</button>
           </div>
-          <button id="currentBtn" aria-pressed="false">CURRENT: OFF</button>
-        </div>
 
-        <!-- Izhikevich Presets -->
-        <div class="preset-group" id="presetGroup" style="display: none;">
-          <label>Neuron Type (Izhikevich 2003):</label>
-          <button class="preset-btn active" data-preset="RS">RS</button>
-          <button class="preset-btn" data-preset="IB">IB</button>
-          <button class="preset-btn" data-preset="CH">CH</button>
-          <button class="preset-btn" data-preset="FS">FS</button>
-          <button class="preset-btn" data-preset="LTS">LTS</button>
-        </div>
+          <div class="preset-group" id="presetGroup" style="display: none;">
+            <label>Neuron Type (Izhikevich 2003):</label>
+            <button class="preset-btn active" data-preset="RS">RS</button>
+            <button class="preset-btn" data-preset="IB">IB</button>
+            <button class="preset-btn" data-preset="CH">CH</button>
+            <button class="preset-btn" data-preset="FS">FS</button>
+            <button class="preset-btn" data-preset="LTS">LTS</button>
+          </div>
 
-        <!-- Morris-Lecar Presets -->
-        <div class="preset-group" id="mlPresetGroup" style="display: none;">
-          <label>Excitability Type:</label>
-          <button class="preset-btn active" data-ml-preset="type1">Type I (SNIC)</button>
-          <button class="preset-btn" data-ml-preset="type2">Type II (Hopf)</button>
+          <div class="preset-group" id="mlPresetGroup" style="display: none;">
+            <label>Excitability Type:</label>
+            <button class="preset-btn active" data-ml-preset="type1">Type I (SNIC)</button>
+            <button class="preset-btn" data-ml-preset="type2">Type II (Hopf)</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="info-panel" id="infoPanel"></div>
-</div>
+    <div class="info-panel" id="infoPanel"></div>
+  </div>
+</main>
 
 <script>
+// ===== Переключение страниц =====
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const page = document.getElementById('page-' + id);
+  if (page) page.classList.add('active');
+  document.querySelectorAll('.nav-link[data-page]').forEach(l => {
+    l.classList.toggle('active', l.dataset.page === id);
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+document.querySelectorAll('[data-page]').forEach(el => {
+  el.addEventListener('click', e => { e.preventDefault(); showPage(el.dataset.page); });
+});
+
 // ===== MODEL DATA =====
 const MODELS = {
   lif: {
@@ -610,7 +595,6 @@ w_\infty(V) = \frac{1}{2}\left[1 + \tanh\left(\frac{V - V_3}{V_4}\right)\right] 
   }
 };
 
-// Izhikevich parameter presets from the 2003 paper (exact values)
 const IZH_PRESETS = {
   RS:  { a: 0.02, b: 0.2,  c: -65, d: 8,  I_default: 10 },
   IB:  { a: 0.02, b: 0.2,  c: -55, d: 4,  I_default: 10 },
@@ -624,7 +608,6 @@ let currentState = {};
 let currentParams = {};
 let currentIzhPreset = 'RS';
 
-// ===== DOM =====
 const modelTitle = document.getElementById('modelTitle');
 const infoPanel = document.getElementById('infoPanel');
 const ampSlider = document.getElementById('amp');
@@ -640,7 +623,6 @@ const timeUnitNowEl = document.getElementById('timeUnitNow');
 const neuronWrap = document.getElementById('neuronWrap');
 const presetGroup = document.getElementById('presetGroup');
 
-// ===== CHARTS =====
 const canvasV = document.getElementById('plotV');
 const canvasI = document.getElementById('plotI');
 const ctxV = canvasV.getContext('2d');
@@ -657,7 +639,6 @@ let dt = 0.01;
 const TIME_SCALE = 25;
 let tMax = 100;
 
-// ===== MODEL FUNCTIONS =====
 function vtrap(x, y) {
   const q = x / y;
   if (Math.abs(q) < 1e-6) return y * (1 + q / 2);
@@ -735,10 +716,10 @@ function updateUIForModel() {
   stateUnitNowEl.textContent = m.stateUnit;
   currentUnitNowEl.textContent = m.currentUnit;
   timeUnitNowEl.textContent = m.timeUnit;
-  
+
   presetGroup.style.display = (currentModelKey === 'izh') ? 'flex' : 'none';
   document.getElementById('mlPresetGroup').style.display = (currentModelKey === 'ml') ? 'flex' : 'none';
-  
+
   infoPanel.innerHTML = `
     <h3>${m.title}</h3>
     <div class="paper-ref">📄 ${m.info.paper}</div>
@@ -773,7 +754,7 @@ function switchModel(key) {
   isCurrentOn = false;
   updateCurrentButton();
   updateUIForModel();
-  
+
   if (key === 'izh') {
     currentIzhPreset = 'RS';
     applyIzhPreset('RS');
@@ -791,10 +772,7 @@ function applyIzhPreset(presetKey) {
   if (!p) return;
   currentParams = { a: p.a, b: p.b, c: p.c, d: p.d };
   currentState = { V: -70, u: p.b * -70 };
-  history = [];
-  simTime = 0;
-  flashUntil = 0;
-  
+  history = []; simTime = 0; flashUntil = 0;
   ampSlider.value = p.I_default;
   ampVal.textContent = p.I_default;
 }
@@ -809,12 +787,9 @@ function applyMLPreset(presetKey) {
   }
   ampVal.textContent = ampSlider.value;
   currentState = { V: -60.8553822323, w: 0.014915024954 };
-  history = [];
-  simTime = 0;
-  flashUntil = 0;
+  history = []; simTime = 0; flashUntil = 0;
 }
 
-// ===== CHART DRAWING =====
 function niceStep(range, target) {
   const raw = range / target;
   const steps = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000];
@@ -899,7 +874,6 @@ function draw() {
   }
 }
 
-// ===== MAIN LOOP =====
 const stepsPerMsReal = TIME_SCALE / dt / 1000;
 let accumMs = 0;
 let lastRealTime = performance.now();
@@ -939,7 +913,6 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
-// ===== EVENTS =====
 document.querySelectorAll('.model-btn').forEach(btn => {
   btn.addEventListener('click', (e) => {
     document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
